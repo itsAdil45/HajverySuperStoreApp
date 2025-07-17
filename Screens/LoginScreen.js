@@ -1,4 +1,3 @@
-// Updated LoginScreen.js
 import React, { useState } from 'react';
 import {
     View,
@@ -8,35 +7,44 @@ import {
     Image,
     StyleSheet,
     SafeAreaView,
+    ActivityIndicator,
+    Alert,
 } from 'react-native';
 import { Eye, EyeOff } from 'lucide-react-native';
+import { useAuth } from '../contexts/AuthContext';
 
-const LoginScreen = ({ navigation, onLogin }) => {
+const LoginScreen = ({ navigation }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [hidePassword, setHidePassword] = useState(true);
+    const { login, loading, error, errorCode } = useAuth();
 
-    const handleLogin = () => {
-        // Add your authentication logic here
-        // For now, we'll just call the onLogin callback
-        if (onLogin) {
-            onLogin(); // This will update the authentication state
+    const handleLogin = async () => {
+        const success = await login(email, password);
+        if (!success && !loading) {
+            if (errorCode == 403) {
+                navigation.navigate('UserAuth', {
+                    email,
+                    type: "email"
+                })
+            }
+            console.log(errorCode);
+            Alert.alert('Login Failed', error || 'Invalid email or password');
         }
+    };
+
+    const handleForgetPassword = () => {
+        navigation.navigate('UserAuth', {
+            type: "password"
+        })
     };
 
     return (
         <SafeAreaView style={styles.container}>
-            {/* Logo */}
-            <Image
-                source={require('../assets/login.png')}
-                style={styles.logo}
-            />
-
-            {/* Title */}
+            <Image source={require('../assets/login.png')} style={styles.logo} />
             <Text style={styles.title}>Login</Text>
             <Text style={styles.subtitle}>Enter your email and password</Text>
 
-            {/* Email Input */}
             <TextInput
                 style={styles.input}
                 placeholder="Email"
@@ -46,7 +54,6 @@ const LoginScreen = ({ navigation, onLogin }) => {
                 onChangeText={setEmail}
             />
 
-            {/* Password Input */}
             <View style={styles.passwordContainer}>
                 <TextInput
                     style={styles.inputPassword}
@@ -56,31 +63,25 @@ const LoginScreen = ({ navigation, onLogin }) => {
                     onChangeText={setPassword}
                 />
                 <TouchableOpacity onPress={() => setHidePassword(!hidePassword)}>
-                    {hidePassword ? (
-                        <EyeOff size={20} color="#777" />
-                    ) : (
-                        <Eye size={20} color="#777" />
-                    )}
+                    {hidePassword ? <EyeOff size={20} color="#777" /> : <Eye size={20} color="#777" />}
                 </TouchableOpacity>
             </View>
 
-            {/* Forgot Password */}
-            <TouchableOpacity style={styles.forgotButton}>
+            <TouchableOpacity style={styles.forgotButton} onPress={() => handleForgetPassword()}>
                 <Text style={styles.forgotText}>Forgot Password?</Text>
             </TouchableOpacity>
 
-            {/* Log In Button */}
-            <TouchableOpacity
-                style={styles.loginButton}
-                onPress={handleLogin}
-            >
-                <Text style={styles.loginButtonText}>Log In</Text>
+            <TouchableOpacity style={styles.loginButton} onPress={handleLogin} disabled={loading}>
+                {loading ? (
+                    <ActivityIndicator color="#fff" />
+                ) : (
+                    <Text style={styles.loginButtonText}>Log In</Text>
+                )}
             </TouchableOpacity>
 
-            {/* Signup link */}
             <View style={styles.signupContainer}>
                 <Text style={styles.signupText}>Don't have an account? </Text>
-                <TouchableOpacity onPress={() => navigation.replace('SignUp')}>
+                <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
                     <Text style={styles.signupLink}>Signup</Text>
                 </TouchableOpacity>
             </View>
@@ -89,6 +90,7 @@ const LoginScreen = ({ navigation, onLogin }) => {
 };
 
 export default LoginScreen;
+
 
 const styles = StyleSheet.create({
     container: {

@@ -8,7 +8,7 @@ import {
     TextInput,
 } from 'react-native';
 
-const OtpModal = ({ visible, phone, onVerify, onResend }) => {
+const OtpModal = ({ visible, email, onVerify, onResend }) => {
     const [otp, setOtp] = useState(['', '', '', '']);
     const [timer, setTimer] = useState(30);
 
@@ -37,7 +37,7 @@ const OtpModal = ({ visible, phone, onVerify, onResend }) => {
                 <View style={styles.modal}>
                     <Text style={styles.title}>Enter OTP</Text>
                     <Text style={styles.message}>
-                        A verification code has been sent to {phone}
+                        A verification code has been sent to {email}
                     </Text>
 
                     <View style={styles.otpRow}>

@@ -5,13 +5,13 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { TouchableOpacity } from 'react-native';
 import { Home, ShoppingCart, Percent, LayoutGrid, Menu } from 'lucide-react-native';
-
+import CustomDrawerContent from './Components/CustomDrawerContent';
 // Auth Screens
 import SplashScreen from './Screens/SplashScreen';
 import OnboardingScreen from './Screens/OnboardingScreen1';
 import LoginScreen from './Screens/LoginScreen';
 import SignupScreen from './Screens/SignupScreen';
-
+import UserAuthScreen from './Screens/UserAuthScreen';
 // Main App Screens
 import HomeScreen from './Screens/Home';
 import BestDealScreen from './Screens/BestDealScreen';
@@ -26,6 +26,7 @@ import EditProfileScreen from './Screens/EditProfileScreen';
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 const Drawer = createDrawerNavigator();
+import { useAuth } from './contexts/AuthContext';
 
 const AuthStack = ({ onLogin }) => {
     return (
@@ -40,6 +41,9 @@ const AuthStack = ({ onLogin }) => {
                 {(props) => <LoginScreen {...props} onLogin={onLogin} />}
             </Stack.Screen>
             <Stack.Screen name="SignUp" component={SignupScreen} />
+            <Stack.Screen name="LocationPickerScreen" component={LocationPickerScreen} />
+            <Stack.Screen name="UserAuth" component={UserAuthScreen} />
+
         </Stack.Navigator>
     );
 };
@@ -127,12 +131,14 @@ const MainTabNavigator = ({ navigation }) => {
 const MainDrawerNavigator = () => {
     return (
         <Drawer.Navigator
+            drawerContent={(props) => <CustomDrawerContent {...props} />}
             screenOptions={{
                 headerShown: false,
                 drawerActiveTintColor: '#007AFF',
                 drawerInactiveTintColor: 'black',
             }}
         >
+
             <Drawer.Screen
                 name="MainTabs"
                 component={MainTabNavigator}
@@ -145,37 +151,31 @@ const MainDrawerNavigator = () => {
         </Drawer.Navigator>
     );
 };
-
 const AppNavigator = () => {
     const [showSplash, setShowSplash] = useState(true);
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const { token } = useAuth();
 
     useEffect(() => {
         const timeout = setTimeout(() => {
             setShowSplash(false);
         }, 2000);
-
         return () => clearTimeout(timeout);
     }, []);
-
-    const handleLogin = () => {
-        setIsAuthenticated(true);
-    };
 
     return (
         <NavigationContainer>
             <Stack.Navigator screenOptions={{ headerShown: false }}>
                 {showSplash ? (
                     <Stack.Screen name="Splash" component={SplashScreen} />
-                ) : isAuthenticated ? (
-                    <Stack.Screen name="MainApp" component={MainDrawerNavigator} />
+                ) : token ? (
+                    <>
+                        <Stack.Screen name="MainApp" component={MainDrawerNavigator} />
+                        <Stack.Screen name="Product" component={ProductScreen} />
+                        <Stack.Screen name="LocationPickerScreen" component={LocationPickerScreen} />
+                    </>
                 ) : (
-                    <Stack.Screen name="Auth">
-                        {(props) => <AuthStack {...props} onLogin={handleLogin} />}
-                    </Stack.Screen>
+                    <Stack.Screen name="Auth" component={AuthStack} />
                 )}
-                <Stack.Screen name="Product" component={ProductScreen} />
-                <Stack.Screen name="LocationPickerScreen" component={LocationPickerScreen} />
 
             </Stack.Navigator>
         </NavigationContainer>

@@ -6,10 +6,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { Linking, Platform } from 'react-native';
 
-export default function LocationPickerScreen({ navigation }) {
+export default function LocationPickerScreen({ navigation, route }) {
     const [location, setLocation] = useState(null);
     const [address, setAddress] = useState(null);
     const mapRef = useRef(null);
+
+    // Get return screen and form data from route params
+    const returnScreen = route?.params?.returnScreen;
+    const formData = route?.params?.formData;
+
     useEffect(() => {
         (async () => {
             try {
@@ -37,13 +42,12 @@ export default function LocationPickerScreen({ navigation }) {
         })();
     }, []);
 
-
     const reverseGeocode = async (lat, lon) => {
         try {
             const result = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lon });
             if (result.length > 0) {
                 const a = result[0];
-                setAddress(`${a.formattedAddress || ''}`);
+                setAddress(`${a.formattedAddress || ''} + Longitude:${lon || ''} + Latitude:${lat || ''}`);
             }
         } catch (error) {
             console.warn('Reverse geocoding failed:', error);
@@ -74,6 +78,7 @@ export default function LocationPickerScreen({ navigation }) {
             console.warn('Error recentering:', error);
         }
     };
+
     useFocusEffect(
         useCallback(() => {
             recenterToUser()
@@ -81,14 +86,19 @@ export default function LocationPickerScreen({ navigation }) {
     );
     const handleConfirm = () => {
         if (address) {
-            console.log(address);
-            // navigation.navigate('CheckoutScreen', {
-            //     newAddress: { type: 'Custom', address },
-            // });
+            // Go back and pass data to previous screen (Signup)
+            navigation.replace(returnScreen, {
+                selectedAddress: address,
+                formData: formData,
+            });
+
+            // Then go back to that screen (do NOT use replace)
+            // navigation.goBack("SignUp");
         } else {
             alert('Please select a location');
         }
     };
+
 
     return (
         <View style={styles.container}>
