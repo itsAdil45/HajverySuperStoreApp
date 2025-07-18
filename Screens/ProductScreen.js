@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
@@ -8,6 +8,7 @@ import {
     ScrollView,
     Modal,
     Dimensions,
+    ActivityIndicator,
 } from 'react-native';
 import { Feather, AntDesign, MaterialIcons } from '@expo/vector-icons';
 import Animated, {
@@ -17,43 +18,94 @@ import Animated, {
     withSpring,
 } from 'react-native-reanimated';
 import { PinchGestureHandler } from 'react-native-gesture-handler';
+import useGet from '../hooks/useGet';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 const ProductScreen = ({ route, navigation }) => {
+    const { productId } = route.params || {};
+
+    // Fetch product data from API
+    const { data: product, loading, error, refetch } = useGet(`/products/${productId}`);
+
     const [selectedVariant, setSelectedVariant] = useState(0);
     const [quantity, setQuantity] = useState(1);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [showImageModal, setShowImageModal] = useState(false);
     const [isFavorite, setIsFavorite] = useState(false);
 
-    const product = route?.params?.product || {
-        id: '1',
-        name: 'Aashirvaad Shudh Atta',
-        description: 'Aashirvaad Atta is made from the finest grains...',
-        images: [
-            require('../assets/cat1.png'),
-            require('../assets/login.png'),
-            require('../assets/onboard1.png'),
-        ],
-        variants: [
-            { id: 1, name: '5 kg', price: '$8', mrp: '$10' },
-            { id: 2, name: '10 kg', price: '$12', mrp: '$14' },
-            { id: 3, name: '20 kg', price: '$20', mrp: '$25' },
-        ],
-        rating: 4.5,
-        reviewCount: 245,
-        inStock: true,
+    // Reset selected variant when product changes
+    useEffect(() => {
+        if (product && product.variants && product.variants.length > 0) {
+            setSelectedVariant(0);
+        }
+    }, [product]);
+
+    // Helper functions
+    const getCurrentVariant = () => {
+        if (product && product.variants && product.variants.length > 0) {
+            return product.variants[selectedVariant];
+        }
+        return null;
     };
 
-    const currentVariant = product.variants[selectedVariant];
+    const getPrice = () => {
+        const variant = getCurrentVariant();
+        if (variant) {
+            return variant.salePrice || variant.price;
+        }
+        return product?.price || 0;
+    };
+
+    const getMRP = () => {
+        const variant = getCurrentVariant();
+        if (variant) {
+            return variant.price;
+        }
+        return product?.price || 0;
+    };
+
+    const getDiscountPercentage = () => {
+        const variant = getCurrentVariant();
+        if (variant && variant.salePrice) {
+            return Math.round(((variant.price - variant.salePrice) / variant.price) * 100);
+        }
+        return 0;
+    };
+
+    const isOnSale = () => {
+        const variant = getCurrentVariant();
+        if (variant) {
+            return !!variant.salePrice;
+        }
+        return product?.isOnSale || false;
+    };
+
+    const getStock = () => {
+        const variant = getCurrentVariant();
+        if (variant) {
+            return variant.stock;
+        }
+        return 999; // Default stock for products without variants
+    };
+
+    const isInStock = () => {
+        return getStock() > 0;
+    };
 
     const adjustQuantity = (type) => {
-        if (type === 'increase') setQuantity((q) => q + 1);
-        if (type === 'decrease' && quantity > 1) setQuantity((q) => q - 1);
+        const maxStock = getStock();
+        if (type === 'increase' && quantity < maxStock) {
+            setQuantity((q) => q + 1);
+        }
+        if (type === 'decrease' && quantity > 1) {
+            setQuantity((q) => q - 1);
+        }
     };
 
     const changeImage = (direction) => {
+        if (!product || !product.images) return;
+
         if (direction === 'next') {
             setCurrentImageIndex((prev) =>
                 prev === product.images.length - 1 ? 0 : prev + 1
@@ -81,10 +133,71 @@ const ProductScreen = ({ route, navigation }) => {
         transform: [{ scale: scale.value }],
     }));
 
+    // Loading state
+    if (loading) {
+        return (
+            <View style={styles.container}>
+                <View style={styles.header}>
+                    <View style={styles.headerLeft}>
+                        <TouchableOpacity onPress={() => navigation.goBack()}>
+                            <Feather name="chevron-left" size={24} color="#333" />
+                        </TouchableOpacity>
+                        <Text style={styles.headerTitle}>Loading...</Text>
+                    </View>
+                </View>
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color="#00C851" />
+                    <Text style={styles.loadingText}>Loading product details...</Text>
+                </View>
+            </View>
+        );
+    }
+
+    // Error state
+    if (error) {
+        return (
+            <View style={styles.container}>
+                <View style={styles.header}>
+                    <View style={styles.headerLeft}>
+                        <TouchableOpacity onPress={() => navigation.goBack()}>
+                            <Feather name="chevron-left" size={24} color="#333" />
+                        </TouchableOpacity>
+                        <Text style={styles.headerTitle}>Error</Text>
+                    </View>
+                </View>
+                <View style={styles.errorContainer}>
+                    <Text style={styles.errorText}>Failed to load product details</Text>
+                    <TouchableOpacity style={styles.retryBtn} onPress={refetch}>
+                        <Text style={styles.retryText}>Retry</Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+        );
+    }
+
+    // No product data
+    if (!product) {
+        return (
+            <View style={styles.container}>
+                <View style={styles.header}>
+                    <View style={styles.headerLeft}>
+                        <TouchableOpacity onPress={() => navigation.goBack()}>
+                            <Feather name="chevron-left" size={24} color="#333" />
+                        </TouchableOpacity>
+                        <Text style={styles.headerTitle}>Product Not Found</Text>
+                    </View>
+                </View>
+                <View style={styles.errorContainer}>
+                    <Text style={styles.errorText}>Product not found</Text>
+                </View>
+            </View>
+        );
+    }
+
     return (
         <View style={styles.container}>
             {/* Header */}
-            {/* <View style={styles.header}>
+            <View style={styles.header}>
                 <View style={styles.headerLeft}>
                     <TouchableOpacity onPress={() => navigation.goBack()}>
                         <Feather name="chevron-left" size={24} color="#333" />
@@ -98,130 +211,166 @@ const ProductScreen = ({ route, navigation }) => {
                         color={isFavorite ? '#ff4757' : '#333'}
                     />
                 </TouchableOpacity>
-            </View> */}
+            </View>
 
             <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
                 {/* Product Image */}
                 <View style={styles.imageContainer}>
                     <TouchableOpacity onPress={() => setShowImageModal(true)}>
                         <Image
-                            source={product.images[currentImageIndex]}
+                            source={{ uri: product.images[currentImageIndex] }}
                             style={styles.productImage}
                         />
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.imageNavLeft} onPress={() => changeImage('prev')}>
-                        <Feather name="chevron-left" size={20} color="#fff" />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.imageNavRight} onPress={() => changeImage('next')}>
-                        <Feather name="chevron-right" size={20} color="#fff" />
-                    </TouchableOpacity>
+                    {product.images.length > 1 && (
+                        <>
+                            <TouchableOpacity style={styles.imageNavLeft} onPress={() => changeImage('prev')}>
+                                <Feather name="chevron-left" size={20} color="#fff" />
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.imageNavRight} onPress={() => changeImage('next')}>
+                                <Feather name="chevron-right" size={20} color="#fff" />
+                            </TouchableOpacity>
+                        </>
+                    )}
 
-                    <View style={styles.indicators}>
-                        {product.images.map((_, index) => (
-                            <View
-                                key={index}
-                                style={[
-                                    styles.indicator,
-                                    currentImageIndex === index && styles.activeIndicator,
-                                ]}
-                            />
-                        ))}
-                    </View>
+                    {product.images.length > 1 && (
+                        <View style={styles.indicators}>
+                            {product.images.map((_, index) => (
+                                <View
+                                    key={index}
+                                    style={[
+                                        styles.indicator,
+                                        currentImageIndex === index && styles.activeIndicator,
+                                    ]}
+                                />
+                            ))}
+                        </View>
+                    )}
+
+                    {isOnSale() && (
+                        <View style={styles.saleTag}>
+                            <Text style={styles.saleText}>SALE</Text>
+                        </View>
+                    )}
                 </View>
 
                 {/* Info */}
                 <View style={styles.info}>
                     <Text style={styles.name}>{product.name}</Text>
+                    <Text style={styles.brand}>Brand: {product.brand}</Text>
 
                     <View style={styles.ratingRow}>
                         <View style={styles.ratingContainer}>
-                            <AntDesign name="star" size={16} color="#ffc107" />
-                            <Text style={styles.rating}>{product.rating}</Text>
-                            <Text style={styles.reviewCount}>({product.reviewCount} reviews)</Text>
+                            <Text style={styles.category}>
+                                Category: {product.category?.sub}
+                            </Text>
                         </View>
                         <Text
                             style={[
                                 styles.stockStatus,
-                                { color: product.inStock ? '#00C851' : '#ff4757' },
+                                { color: isInStock() ? '#00C851' : '#ff4757' },
                             ]}
                         >
-                            {product.inStock ? 'In Stock' : 'Out of Stock'}
+                            {isInStock() ? `In Stock (${getStock()})` : 'Out of Stock'}
                         </Text>
                     </View>
 
                     <View style={styles.priceRow}>
-                        <Text style={styles.mrp}>{currentVariant.mrp}</Text>
-                        <Text style={styles.price}>{currentVariant.price}</Text>
-                        <View style={styles.discountBadge}>
-                            <Text style={styles.discountText}>
-                                {Math.round(
-                                    ((parseFloat(currentVariant.mrp.slice(1)) -
-                                        parseFloat(currentVariant.price.slice(1))) /
-                                        parseFloat(currentVariant.mrp.slice(1))) *
-                                    100
-                                )}
-                                % OFF
-                            </Text>
-                        </View>
+                        {isOnSale() && (
+                            <Text style={styles.mrp}>Rs{getMRP()}</Text>
+                        )}
+                        <Text style={styles.price}>Rs{getPrice()}</Text>
+                        {isOnSale() && (
+                            <View style={styles.discountBadge}>
+                                <Text style={styles.discountText}>
+                                    {getDiscountPercentage()}% OFF
+                                </Text>
+                            </View>
+                        )}
                     </View>
 
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Select Size</Text>
-                        <View style={styles.variantContainer}>
-                            {product.variants.map((variant, index) => (
+                    {product.variants && product.variants.length > 0 && (
+                        <View style={styles.section}>
+                            <Text style={styles.sectionTitle}>Select Variant</Text>
+                            <View style={styles.variantContainer}>
+                                {product.variants.map((variant, index) => (
+                                    <TouchableOpacity
+                                        key={variant._id}
+                                        style={[
+                                            styles.variantButton,
+                                            selectedVariant === index && styles.selectedVariant,
+                                        ]}
+                                        onPress={() => {
+                                            setSelectedVariant(index);
+                                            setQuantity(1); // Reset quantity when variant changes
+                                        }}
+                                    >
+                                        <Text
+                                            style={[
+                                                styles.variantText,
+                                                selectedVariant === index && styles.selectedVariantText,
+                                            ]}
+                                        >
+                                            {variant.name}
+                                        </Text>
+                                        <Text
+                                            style={[
+                                                styles.variantPrice,
+                                                selectedVariant === index && styles.selectedVariantText,
+                                            ]}
+                                        >
+                                            Rs{variant.salePrice || variant.price}
+                                        </Text>
+                                        {variant.stock <= 5 && variant.stock > 0 && (
+                                            <Text
+                                                style={[
+                                                    styles.variantStock,
+                                                    selectedVariant === index && styles.selectedVariantText,
+                                                ]}
+                                            >
+                                                Only {variant.stock} left
+                                            </Text>
+                                        )}
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        </View>
+                    )}
+
+                    {isInStock() && (
+                        <View style={styles.section}>
+                            <Text style={styles.sectionTitle}>Quantity</Text>
+                            <View style={styles.quantityContainer}>
                                 <TouchableOpacity
-                                    key={variant.id}
-                                    style={[
-                                        styles.variantButton,
-                                        selectedVariant === index && styles.selectedVariant,
-                                    ]}
-                                    onPress={() => setSelectedVariant(index)}
+                                    style={[styles.quantityButton, quantity === 1 && styles.disabledButton]}
+                                    onPress={() => adjustQuantity('decrease')}
+                                    disabled={quantity === 1}
                                 >
-                                    <Text
-                                        style={[
-                                            styles.variantText,
-                                            selectedVariant === index && styles.selectedVariantText,
-                                        ]}
-                                    >
-                                        {variant.name}
-                                    </Text>
-                                    <Text
-                                        style={[
-                                            styles.variantPrice,
-                                            selectedVariant === index && styles.selectedVariantText,
-                                        ]}
-                                    >
-                                        {variant.price}
-                                    </Text>
+                                    <MaterialIcons
+                                        name="remove"
+                                        size={20}
+                                        color={quantity === 1 ? '#ccc' : '#333'}
+                                    />
                                 </TouchableOpacity>
-                            ))}
+                                <Text style={styles.quantityText}>{quantity}</Text>
+                                <TouchableOpacity
+                                    style={[styles.quantityButton, quantity >= getStock() && styles.disabledButton]}
+                                    onPress={() => adjustQuantity('increase')}
+                                    disabled={quantity >= getStock()}
+                                >
+                                    <MaterialIcons
+                                        name="add"
+                                        size={20}
+                                        color={quantity >= getStock() ? '#ccc' : '#333'}
+                                    />
+                                </TouchableOpacity>
+                            </View>
+                            {/* <Text style={styles.maxQuantityText}>
+                                Maximum {getStock()} items available
+                            </Text> */}
                         </View>
-                    </View>
-
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Quantity</Text>
-                        <View style={styles.quantityContainer}>
-                            <TouchableOpacity
-                                style={[styles.quantityButton, quantity === 1 && styles.disabledButton]}
-                                onPress={() => adjustQuantity('decrease')}
-                                disabled={quantity === 1}
-                            >
-                                <MaterialIcons
-                                    name="remove"
-                                    size={20}
-                                    color={quantity === 1 ? '#ccc' : '#333'}
-                                />
-                            </TouchableOpacity>
-                            <Text style={styles.quantityText}>{quantity}</Text>
-                            <TouchableOpacity
-                                style={styles.quantityButton}
-                                onPress={() => adjustQuantity('increase')}
-                            >
-                                <MaterialIcons name="add" size={20} color="#333" />
-                            </TouchableOpacity>
-                        </View>
-                    </View>
+                    )}
 
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Description</Text>
@@ -235,15 +384,15 @@ const ProductScreen = ({ route, navigation }) => {
                 <View style={styles.totalPrice}>
                     <Text style={styles.totalLabel}>Total: </Text>
                     <Text style={styles.totalAmount}>
-                        {(parseFloat(currentVariant.price.slice(1)) * quantity).toFixed(2)}
+                        Rs{(getPrice() * quantity).toFixed(0)}
                     </Text>
                 </View>
                 <TouchableOpacity
-                    style={[styles.cartBtn, !product.inStock && styles.disabledCartBtn]}
-                    disabled={!product.inStock}
+                    style={[styles.cartBtn, !isInStock() && styles.disabledCartBtn]}
+                    disabled={!isInStock()}
                 >
                     <Text style={styles.cartBtnText}>
-                        {product.inStock ? 'Add to Cart' : 'Out of Stock'}
+                        {isInStock() ? 'Add to Cart' : 'Out of Stock'}
                     </Text>
                 </TouchableOpacity>
             </View>
@@ -272,7 +421,7 @@ const ProductScreen = ({ route, navigation }) => {
                     <PinchGestureHandler onGestureEvent={pinchHandler}>
                         <Animated.View style={[styles.modalImageContainer, animatedStyle]}>
                             <Image
-                                source={product.images[currentImageIndex]}
+                                source={{ uri: product.images[currentImageIndex] }}
                                 style={styles.modalImage}
                                 resizeMode="contain"
                             />
@@ -299,6 +448,38 @@ const styles = StyleSheet.create({
     },
     headerLeft: { flexDirection: 'row', alignItems: 'center' },
     headerTitle: { fontSize: 18, fontWeight: 'bold', marginLeft: 12, color: '#333' },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    loadingText: {
+        marginTop: 16,
+        fontSize: 16,
+        color: '#666',
+    },
+    errorContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+    },
+    errorText: {
+        fontSize: 16,
+        color: '#666',
+        textAlign: 'center',
+        marginBottom: 20,
+    },
+    retryBtn: {
+        backgroundColor: '#00C851',
+        paddingHorizontal: 20,
+        paddingVertical: 10,
+        borderRadius: 8,
+    },
+    retryText: {
+        color: '#fff',
+        fontWeight: 'bold',
+    },
     content: { paddingBottom: 120 },
     imageContainer: { position: 'relative', backgroundColor: '#fff' },
     productImage: { width: '100%', height: 300, resizeMode: 'contain' },
@@ -331,12 +512,26 @@ const styles = StyleSheet.create({
         marginHorizontal: 4,
     },
     activeIndicator: { backgroundColor: '#00C851' },
+    saleTag: {
+        position: 'absolute',
+        top: 16,
+        left: 16,
+        backgroundColor: '#ff4757',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 4,
+    },
+    saleText: {
+        color: '#fff',
+        fontSize: 12,
+        fontWeight: 'bold',
+    },
     info: { backgroundColor: '#fff', padding: 20, marginBottom: 8 },
-    name: { fontSize: 22, fontWeight: 'bold', color: '#333', marginBottom: 8 },
+    name: { fontSize: 22, fontWeight: 'bold', color: '#333', marginBottom: 4 },
+    brand: { fontSize: 16, color: '#666', marginBottom: 8 },
     ratingRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
-    ratingContainer: { flexDirection: 'row', alignItems: 'center' },
-    rating: { fontSize: 16, fontWeight: '600', marginLeft: 4, color: '#333' },
-    reviewCount: { fontSize: 14, color: '#666', marginLeft: 4 },
+    ratingContainer: { flex: 1 },
+    category: { fontSize: 14, color: '#666' },
     stockStatus: { fontSize: 14, fontWeight: '600' },
     priceRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 24 },
     mrp: { color: '#999', textDecorationLine: 'line-through', fontSize: 16, marginRight: 12 },
@@ -363,6 +558,7 @@ const styles = StyleSheet.create({
     variantText: { fontSize: 14, fontWeight: '600', color: '#333' },
     selectedVariantText: { color: '#fff' },
     variantPrice: { fontSize: 12, color: '#666', marginTop: 2 },
+    variantStock: { fontSize: 10, color: '#ff4757', marginTop: 2 },
     quantityContainer: { flexDirection: 'row', alignItems: 'center' },
     quantityButton: {
         width: 40,
@@ -374,6 +570,7 @@ const styles = StyleSheet.create({
     },
     disabledButton: { backgroundColor: '#f8f8f8' },
     quantityText: { fontSize: 18, fontWeight: '600', marginHorizontal: 20, color: '#333' },
+    maxQuantityText: { fontSize: 12, color: '#666', marginTop: 8 },
     desc: { fontSize: 16, lineHeight: 24, color: '#666' },
     footer: {
         position: 'absolute',
@@ -430,4 +627,5 @@ const styles = StyleSheet.create({
         height: '100%',
     },
 });
-export default ProductScreen
+
+export default ProductScreen;

@@ -23,6 +23,7 @@ import LocationPickerScreen from './Screens/LocationPickerScreen';
 import PaymentScreen from './Screens/PaymentScreen';
 import OrderScreen from './Screens/OrderScreen';
 import EditProfileScreen from './Screens/EditProfileScreen';
+import MainCategoriesScreen from './Screens/MainCategoriesScreen';
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 const Drawer = createDrawerNavigator();
@@ -43,7 +44,6 @@ const AuthStack = ({ onLogin }) => {
             <Stack.Screen name="SignUp" component={SignupScreen} />
             <Stack.Screen name="LocationPickerScreen" component={LocationPickerScreen} />
             <Stack.Screen name="UserAuth" component={UserAuthScreen} />
-
         </Stack.Navigator>
     );
 };
@@ -117,14 +117,13 @@ const MainTabNavigator = ({ navigation }) => {
             />
             <Tab.Screen
                 name="CategoryTab"
-                component={CategoryProductsScreen}
+                component={MainCategoriesScreen}
                 options={{
                     tabBarLabel: 'Category',
                     tabBarIcon: ({ color, size }) => <LayoutGrid color={color} size={size} />,
                 }}
             />
         </Tab.Navigator>
-
     );
 };
 
@@ -138,7 +137,6 @@ const MainDrawerNavigator = () => {
                 drawerInactiveTintColor: 'black',
             }}
         >
-
             <Drawer.Screen
                 name="MainTabs"
                 component={MainTabNavigator}
@@ -146,11 +144,44 @@ const MainDrawerNavigator = () => {
                     drawerLabel: 'Home',
                 }}
             />
-
-
         </Drawer.Navigator>
     );
 };
+
+// Create a main stack navigator that includes both drawer and other screens
+const MainStackNavigator = () => {
+    return (
+        <Stack.Navigator>
+            <Stack.Screen
+                name="MainDrawer"
+                component={MainDrawerNavigator}
+                options={{ headerShown: false }}
+            />
+            <Stack.Screen
+                name="main Categories"
+                component={MainCategoriesScreen}
+                options={{ headerShown: true }}
+            />
+            <Stack.Screen
+                name="CategoryProducts"
+                component={CategoryProductsScreen}
+                options={{ headerShown: true }}
+            />
+            <Stack.Screen
+                name="Product"
+                component={ProductScreen}
+                options={{ headerShown: false }}
+            />
+            <Stack.Screen
+                name="LocationPickerScreen"
+                component={LocationPickerScreen}
+                options={{ headerShown: false }}
+            />
+        </Stack.Navigator>
+    );
+};
+
+
 const AppNavigator = () => {
     const [showSplash, setShowSplash] = useState(true);
     const { token } = useAuth();
@@ -168,15 +199,10 @@ const AppNavigator = () => {
                 {showSplash ? (
                     <Stack.Screen name="Splash" component={SplashScreen} />
                 ) : token ? (
-                    <>
-                        <Stack.Screen name="MainApp" component={MainDrawerNavigator} />
-                        <Stack.Screen name="Product" component={ProductScreen} />
-                        <Stack.Screen name="LocationPickerScreen" component={LocationPickerScreen} />
-                    </>
+                    <Stack.Screen name="MainApp" component={MainStackNavigator} />
                 ) : (
                     <Stack.Screen name="Auth" component={AuthStack} />
                 )}
-
             </Stack.Navigator>
         </NavigationContainer>
     );

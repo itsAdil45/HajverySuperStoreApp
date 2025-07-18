@@ -1,141 +1,150 @@
-import React, { useState } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    FlatList,
-    TouchableOpacity,
-    Image,
-    ScrollView
-} from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, FlatList, TouchableOpacity, Image, ActivityIndicator, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import useGet from '../hooks/useGet';
 
-// Dummy categories and products
-const subcategories = [
-    'Atta',
-    'Besan & Maida',
-    'Sooji',
-    'Rice',
-    'Poha & Daliya',
-    'Toor, Urad & Chana',
-    'Aatta',
-    'Beasan & Maida',
-    'Soaoji',
-    'Raice',
-    'Paoha & Daliya',
-    'Tooar, Urad & Chana',
-    'Aastta',
-    'Bseasan & Maida',
-    'Soaosji',
-    'Raicse',
-    'Paohas & Daliya',
-    'Tsooar, Urad & Chana',
-];
 
-const allProducts = {
-    'Atta': [
-        {
-            id: '1',
-            name: 'Aashirvaad Shudh Atta',
-            weight: '10 kg',
-            price: '$12',
-            mrp: '$14',
-            image: require('../assets/cat1.png'),
-        },
-        {
-            id: '254',
-            name: 'Fresh Ultimate Atta',
-            weight: '5 kg',
-            price: '$7',
-            mrp: '$10',
-            image: require('../assets/cat1.png'),
-        },
-        {
-            id: '39',
-            name: 'Fortune Fresh Atta',
-            weight: '5 kg',
-            price: '$5',
-            mrp: '$8',
-            image: require('../assets/cat1.png'),
-        },
-        {
-            id: '112',
-            name: 'Aashirvaad Shudh Atta',
-            weight: '10 kg',
-            price: '$12',
-            mrp: '$14',
-            image: require('../assets/cat1.png'),
-        },
-        {
-            id: '24',
-            name: 'Fresh Ultimate Atta',
-            weight: '5 kg',
-            price: '$7',
-            mrp: '$10',
-            image: require('../assets/cat1.png'),
-        },
-        {
-            id: '31',
-            name: 'Fortune Fresh Atta',
-            weight: '5 kg',
-            price: '$5',
-            mrp: '$8',
-            image: require('../assets/cat1.png'),
-        },
-        {
-            id: '19',
-            name: 'Aashirvaad Shudh Atta',
-            weight: '10 kg',
-            price: '$12',
-            mrp: '$14',
-            image: require('../assets/cat1.png'),
-        },
-        {
-            id: '25',
-            name: 'Fresh Ultimate Atta',
-            weight: '5 kg',
-            price: '$7',
-            mrp: '$10',
-            image: require('../assets/cat1.png'),
-        },
-        {
-            id: '12',
-            name: 'Fortune Fresh Atta',
-            weight: '5 kg',
-            price: '$5',
-            mrp: '$8',
-            image: require('../assets/cat1.png'),
-        },
-    ],
-    'Besan & Maida': [],
-    'Sooji': [],
-    'Rice': [],
-    'Poha & Daliya': [],
-    'Toor, Urad & Chana': [],
-    'Bsesan & Maida': [],
-    'Ssooji': [],
-    'Risce': [],
-    'Psoha & Daliya': [],
-    'Tosor, Urad & Chana': [],
-};
+const CategoryProductsScreen = ({ navigation, route }) => {
+    const { mainCategoryID } = route.params || {};
 
-const CategoryProductsScreen = ({ navigation }) => {
-    const [selectedSubcat, setSelectedSubcat] = useState(subcategories[0]);
+    // Fetch subcategories from API
+    const { data, loading, error, refetch } = useGet(`/categories/sub_by_main/${mainCategoryID}`);
+
+    const [subcategories, setSubcategories] = useState([]);
+    const [selectedSubcat, setSelectedSubcat] = useState('');
+
+    // Fetch products using useGet hook
+    const {
+        data: productsData,
+        loading: productsLoading,
+        error: productsError,
+        refetch: refetchProducts
+    } = useGet(`/products?category=${encodeURIComponent(selectedSubcat)}`);
+
+    useEffect(() => {
+        if (data && data.subCategories) {
+            const subcatNames = data.subCategories.map(subcat => subcat.name);
+            setSubcategories(subcatNames);
+            // Set the first subcategory as selected by default
+            if (subcatNames.length > 0) {
+                setSelectedSubcat(subcatNames[0]);
+            }
+        }
+    }, [data]);
+
+    const getPriceDisplay = (product) => {
+        if (product.variants && product.variants.length > 0) {
+            // Get price range from variants
+            const prices = product.variants.map(variant => {
+                return variant.salePrice || variant.price;
+            });
+            const minPrice = Math.min(...prices);
+            const maxPrice = Math.max(...prices);
+
+            if (minPrice === maxPrice) {
+                return `Rs${minPrice}`;
+            }
+            return `Rs${minPrice}-Rs${maxPrice}`;
+        }
+
+        // Single product price
+        return product.salePrice ? `Rs${product.salePrice}` : `Rs${product.price}`;
+    };
+
+    const getMRPDisplay = (product) => {
+        if (product.variants && product.variants.length > 0) {
+            // Get original price range from variants
+            const prices = product.variants.map(variant => variant.price);
+            const minPrice = Math.min(...prices);
+            const maxPrice = Math.max(...prices);
+
+            if (minPrice === maxPrice) {
+                return `$${minPrice}`;
+            }
+            return `Rs${minPrice}-Rs${maxPrice}`;
+        }
+
+        // Single product MRP
+        return `Rs${product.price}`;
+    };
+
+    const getVariantInfo = (product) => {
+        if (product.variants && product.variants.length > 0) {
+            return product.variants.map(variant => variant.name).join(', ');
+        }
+        return 'Standard';
+    };
 
     const renderProduct = ({ item }) => (
-        <TouchableOpacity style={styles.card} onPress={() => navigation.navigate("Product")}>
-            <Image source={item.image} style={styles.image} />
-            <Text style={styles.name}>{item.name}</Text>
-            <Text style={styles.qty}>{item.weight}</Text>
+        <TouchableOpacity style={styles.card} onPress={() => navigation.navigate("Product", { productId: item._id })}>
+            <View style={styles.imageContainer}>
+                <Image
+                    source={{ uri: item.images[0] }}
+                    style={styles.image}
+                    resizeMode="cover"
+                />
+                {item.isOnSale && (
+                    <View style={styles.saleTag}>
+                        <Text style={styles.saleText}>SALE</Text>
+                    </View>
+                )}
+            </View>
+            <Text style={styles.name} numberOfLines={2}>{item.name}</Text>
+            <Text style={styles.brand}>{item.brand}</Text>
+            <Text style={styles.qty}>{getVariantInfo(item)}</Text>
             <View style={styles.priceRow}>
-                <Text style={styles.mrp}>{item.mrp}</Text>
-                <Text style={styles.price}>{item.price}</Text>
+                {(item.isOnSale || item.salePrice) && (
+                    <Text style={styles.mrp}>{getMRPDisplay(item)}</Text>
+                )}
+                <Text style={[styles.price, item.isOnSale && styles.salePrice]}>
+                    {getPriceDisplay(item)}
+                </Text>
             </View>
             <TouchableOpacity style={styles.addButton}>
                 <Text style={styles.addText}>Add</Text>
             </TouchableOpacity>
         </TouchableOpacity>
     );
+
+    // Handle loading state
+    if (loading) {
+        return (
+            <View style={styles.container}>
+                <View style={styles.header}>
+                    <TouchableOpacity onPress={() => navigation.goBack()}>
+                        <Feather name="chevron-left" size={24} />
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>Loading...</Text>
+                    <Feather name="search" size={20} />
+                </View>
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color="#0000ff" />
+                    <Text style={styles.loadingText}>Loading subcategories...</Text>
+                </View>
+            </View>
+        );
+    }
+
+    // Handle error state
+    if (error) {
+        return (
+            <View style={styles.container}>
+                <View style={styles.header}>
+                    <TouchableOpacity onPress={() => navigation.goBack()}>
+                        <Feather name="chevron-left" size={24} />
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>Error</Text>
+                    <Feather name="search" size={20} />
+                </View>
+                <View style={styles.errorContainer}>
+                    <Text style={styles.errorText}>Failed to load subcategories</Text>
+                    <TouchableOpacity style={styles.retryBtn} onPress={refetch}>
+                        <Text style={styles.retryText}>Retry</Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+        );
+    }
 
     return (
         <View style={styles.container}>
@@ -144,7 +153,7 @@ const CategoryProductsScreen = ({ navigation }) => {
                 <TouchableOpacity onPress={() => navigation.goBack()}>
                     <Feather name="chevron-left" size={24} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Atta, Rice & Dal</Text>
+                <Text style={styles.headerTitle}>Categories</Text>
                 <Feather name="search" size={20} />
             </View>
 
@@ -152,11 +161,10 @@ const CategoryProductsScreen = ({ navigation }) => {
                 {/* Left Subcategory List */}
                 <FlatList
                     data={subcategories}
-                    keyExtractor={item => item}
+                    keyExtractor={(item, index) => `${item}-${index}`}
                     style={styles.sidebar}
                     showsVerticalScrollIndicator={false}
                     renderItem={({ item }) => (
-
                         <TouchableOpacity
                             onPress={() => setSelectedSubcat(item)}
                             style={[
@@ -175,27 +183,51 @@ const CategoryProductsScreen = ({ navigation }) => {
                             </Text>
                         </TouchableOpacity>
                     )}
+                    ListEmptyComponent={
+                        <View style={styles.emptySubcatContainer}>
+                            <Text style={styles.emptySubcatText}>No subcategories found</Text>
+                        </View>
+                    }
                 />
 
                 {/* Right Product Grid */}
                 <View style={{ flex: 1 }}>
-                    <FlatList
-                        data={allProducts[selectedSubcat] || []}
-                        keyExtractor={item => item.id}
-                        renderItem={renderProduct}
-                        numColumns={2}
-                        contentContainerStyle={styles.productList}
-                        columnWrapperStyle={{ justifyContent: 'space-between' }}
-                        showsVerticalScrollIndicator={true}
-                        ListEmptyComponent={
-                            <Text style={styles.emptyText}>No items in this category</Text>
-                        }
-                    />
+                    {productsLoading ? (
+                        <View style={styles.loadingContainer}>
+                            <ActivityIndicator size="large" color="#0000ff" />
+                            <Text style={styles.loadingText}>Loading products...</Text>
+                        </View>
+                    ) : productsError ? (
+                        <View style={styles.errorContainer}>
+                            <Text style={styles.errorText}>Failed to load products</Text>
+                            <TouchableOpacity style={styles.retryBtn} onPress={() => refetchProducts()}>
+                                <Text style={styles.retryText}>Retry</Text>
+                            </TouchableOpacity>
+                        </View>
+                    ) : (
+                        <FlatList
+                            data={productsData || []}
+                            keyExtractor={item => item._id}
+                            renderItem={renderProduct}
+                            numColumns={2}
+                            contentContainerStyle={styles.productList}
+                            columnWrapperStyle={{ justifyContent: 'space-between' }}
+                            showsVerticalScrollIndicator={true}
+                            ListEmptyComponent={
+                                <View style={styles.emptyProductContainer}>
+                                    <Text style={styles.emptyText}>
+                                        {selectedSubcat ? `No items in ${selectedSubcat}` : 'Select a subcategory to view products'}
+                                    </Text>
+                                </View>
+                            }
+                        />
+                    )}
                 </View>
             </View>
         </View>
     );
 };
+
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#fff' },
@@ -283,6 +315,64 @@ const styles = StyleSheet.create({
         color: '#aaa',
         fontStyle: 'italic',
         marginTop: 30,
+    },
+    imageContainer: {
+        position: 'relative',
+    },
+    saleTag: {
+        position: 'absolute',
+        top: 8,
+        right: 8,
+        backgroundColor: '#ff4444',
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 4,
+        zIndex: 1,
+    },
+    saleText: {
+        color: 'white',
+        fontSize: 10,
+        fontWeight: 'bold',
+    },
+    brand: {
+        fontSize: 12,
+        color: '#666',
+        marginBottom: 4,
+    },
+    salePrice: {
+        color: '#ff4444',
+        fontWeight: 'bold',
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+    },
+    loadingText: {
+        marginTop: 10,
+        color: '#666',
+    },
+    errorContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+    },
+    errorText: {
+        color: '#ff4444',
+        textAlign: 'center',
+        marginBottom: 10,
+    },
+    retryBtn: {
+        backgroundColor: '#007bff',
+        paddingHorizontal: 20,
+        paddingVertical: 10,
+        borderRadius: 5,
+    },
+    retryText: {
+        color: 'white',
+        fontWeight: 'bold',
     },
 });
 

@@ -8,19 +8,11 @@ import {
     Image,
     TouchableOpacity,
     FlatList,
+    ActivityIndicator
 } from 'react-native';
 import { Ionicons, Feather } from '@expo/vector-icons'; // or react-native-vector-icons
-
-const categories = [
-    { id: '1', title: 'Vegetables & Fruits', icon: require('../assets/cat1.png') },
-    { id: '2', title: 'Dairy & Breakfast', icon: require('../assets/cat1.png') },
-    { id: '3', title: 'Cold Drinks & Juices', icon: require('../assets/cat1.png') },
-    { id: '4', title: 'Instant & Frozen Food', icon: require('../assets/cat1.png') },
-    { id: '5', title: 'Tea & Coffee', icon: require('../assets/cat1.png') },
-    { id: '6', title: 'Atta, Rice & Dal', icon: require('../assets/cat1.png') },
-    { id: '7', title: 'Masala, Oil & Dry Fruits', icon: require('../assets/cat1.png') },
-    { id: '8', title: 'Chicken, Meat & Fish', icon: require('../assets/cat1.png') },
-];
+import useGet from '../hooks/useGet';
+import { useEffect, useState } from 'react';
 
 const bestDeals = [
     {
@@ -42,6 +34,35 @@ const bestDeals = [
 ];
 
 const Home = ({ navigation }) => {
+    const { data, loading, error, refetch } = useGet('/categories/all_main');
+    const [categories, setCategories] = useState([]);
+
+    useEffect(() => {
+        if (data && data.categories) {
+            setCategories(data.categories);
+        }
+    }, [data]);
+
+    if (loading) {
+        return (
+            <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#0000ff" />
+                <Text>Loading categories...</Text>
+            </View>
+        );
+    }
+
+    if (error) {
+        return (
+            <View style={styles.errorContainer}>
+                <Text style={styles.errorText}>Error loading categories</Text>
+                <TouchableOpacity style={styles.retryBtn} onPress={refetch}>
+                    <Text style={styles.retryText}>Retry</Text>
+                </TouchableOpacity>
+            </View>
+        );
+    }
+
     return (
         <ScrollView style={styles.container}>
             {/* Header */}
@@ -67,18 +88,29 @@ const Home = ({ navigation }) => {
             {/* Shop by Category */}
             <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>Shop By Category</Text>
-                <TouchableOpacity onPress={() => navigation.navigate("CategoryTab")}>
+                <TouchableOpacity onPress={() => navigation.navigate("main Categories")}>
                     <Text style={styles.seeAll}>See All</Text>
                 </TouchableOpacity>
             </View>
 
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryRow}>
-                {categories.map(cat => (
-                    <TouchableOpacity key={cat.id} style={styles.categoryItem} onPress={() => navigation.navigate("CategoryTab")}>
-                        <Image source={cat.icon} style={styles.categoryIcon} />
-                        <Text style={styles.categoryText}>{cat.title}</Text>
-                    </TouchableOpacity>
-                ))}
+                {categories && categories.length > 0 ? (
+                    categories.map((cat, key) => (
+                        <TouchableOpacity
+                            key={cat.id || key}
+                            style={styles.categoryItem}
+                            onPress={() => navigation.navigate("CategoryProducts", { mainCategoryID: cat._id })}
+                        >
+
+                            <Image source={{ uri: cat.icon }} style={styles.categoryIcon} />
+                            <Text style={styles.categoryText}>{cat.name}</Text>
+                        </TouchableOpacity>
+                    ))
+                ) : (
+                    <View style={styles.noCategoriesContainer}>
+                        <Text style={styles.noCategoriesText}>No categories available</Text>
+                    </View>
+                )}
             </ScrollView>
 
             {/* Banner */}
@@ -119,7 +151,7 @@ const Home = ({ navigation }) => {
                     </View>
                 )}
             />
-        </ScrollView >
+        </ScrollView>
     );
 };
 
