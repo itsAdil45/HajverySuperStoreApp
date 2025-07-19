@@ -9,6 +9,7 @@ import {
     Modal,
     Dimensions,
     ActivityIndicator,
+    Alert,
 } from 'react-native';
 import { Feather, AntDesign, MaterialIcons } from '@expo/vector-icons';
 import Animated, {
@@ -19,6 +20,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { PinchGestureHandler } from 'react-native-gesture-handler';
 import useGet from '../hooks/useGet';
+import usePost from '../hooks/usePost';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -27,6 +29,9 @@ const ProductScreen = ({ route, navigation }) => {
 
     // Fetch product data from API
     const { data: product, loading, error, refetch } = useGet(`/products/${productId}`);
+
+    // Cart functionality
+    const { post: addToCart, loading: addingToCart, error: cartError, errorCode } = usePost();
 
     const [selectedVariant, setSelectedVariant] = useState(0);
     const [quantity, setQuantity] = useState(1);
@@ -41,6 +46,17 @@ const ProductScreen = ({ route, navigation }) => {
         }
     }, [product]);
 
+    // Show error alert when cart error occurs
+    useEffect(() => {
+        if (cartError) {
+            Alert.alert(
+                'Error Adding to Cart',
+                cartError,
+                [{ text: 'OK', style: 'default' }]
+            );
+        }
+    }, [cartError]);
+
     // Helper functions
     const getCurrentVariant = () => {
         if (product && product.variants && product.variants.length > 0) {
@@ -49,12 +65,17 @@ const ProductScreen = ({ route, navigation }) => {
         return null;
     };
 
+    const getCurrentVariantName = () => {
+        const variant = getCurrentVariant();
+        return variant ? variant.name : 'Default';
+    };
+
     const getPrice = () => {
         const variant = getCurrentVariant();
         if (variant) {
-            return variant.salePrice || variant.price;
+            return variant.isOnSale ? variant.salePrice || variant.price : variant.price;
         }
-        return product?.price || 0;
+        return product?.startingPrice || product?.bestPrice || 0;
     };
 
     const getMRP = () => {
@@ -62,12 +83,12 @@ const ProductScreen = ({ route, navigation }) => {
         if (variant) {
             return variant.price;
         }
-        return product?.price || 0;
+        return product?.startingPrice || product?.bestPrice || 0;
     };
 
     const getDiscountPercentage = () => {
         const variant = getCurrentVariant();
-        if (variant && variant.salePrice) {
+        if (variant && variant.isOnSale && variant.salePrice) {
             return Math.round(((variant.price - variant.salePrice) / variant.price) * 100);
         }
         return 0;
@@ -76,17 +97,17 @@ const ProductScreen = ({ route, navigation }) => {
     const isOnSale = () => {
         const variant = getCurrentVariant();
         if (variant) {
-            return !!variant.salePrice;
+            return variant.isOnSale;
         }
-        return product?.isOnSale || false;
+        return product?.hasActiveSale || false;
     };
 
     const getStock = () => {
-        const variant = getCurrentVariant();
-        if (variant) {
-            return variant.stock;
-        }
-        return 999; // Default stock for products without variants
+        // const variant = getCurrentVariant();
+        // if (variant) {
+        //     return variant.stock;
+        // }
+        return product?.stock || 0;
     };
 
     const isInStock = () => {
@@ -113,6 +134,59 @@ const ProductScreen = ({ route, navigation }) => {
         } else {
             setCurrentImageIndex((prev) =>
                 prev === 0 ? product.images.length - 1 : prev - 1
+            );
+        }
+    };
+
+    const formatPrice = (price) => {
+        return `Rs ${parseFloat(price).toFixed(2)}`;
+    };
+
+    // Add to cart function
+    const handleAddToCart = async () => {
+        if (!isInStock()) {
+            Alert.alert('Out of Stock', 'This product is currently out of stock.');
+            return;
+        }
+
+        const cartData = {
+            productId: product._id || product.id || productId,
+            quantity: quantity,
+            variantName: getCurrentVariantName()
+        };
+
+        console.log('Adding to cart:', cartData);
+
+        try {
+            const response = await addToCart('/api/cart/add', cartData, true); // useAuth = true for authenticated request
+
+            if (response) {
+                Alert.alert(
+                    'Success!',
+                    `${quantity} ${quantity === 1 ? 'item' : 'items'} added to cart`,
+                    [
+                        {
+                            text: 'Continue Shopping',
+                            style: 'default'
+                        },
+                        {
+                            text: 'View Cart',
+                            style: 'default',
+                            onPress: () => {
+                                // Navigate to cart screen if available
+                                // navigation.navigate('Cart');
+                                console.log('Navigate to cart screen');
+                            }
+                        }
+                    ]
+                );
+            }
+        } catch (err) {
+            console.error('Error adding to cart:', err);
+            Alert.alert(
+                'Error',
+                'Failed to add item to cart. Please try again.',
+                [{ text: 'OK', style: 'default' }]
             );
         }
     };
@@ -263,7 +337,7 @@ const ProductScreen = ({ route, navigation }) => {
                     <View style={styles.ratingRow}>
                         <View style={styles.ratingContainer}>
                             <Text style={styles.category}>
-                                Category: {product.category?.sub}
+                                Category: {typeof product.category === 'object' ? product.category.sub : product.category}
                             </Text>
                         </View>
                         <Text
@@ -277,11 +351,11 @@ const ProductScreen = ({ route, navigation }) => {
                     </View>
 
                     <View style={styles.priceRow}>
-                        {isOnSale() && (
-                            <Text style={styles.mrp}>Rs{getMRP()}</Text>
+                        {isOnSale() && getPrice() < getMRP() && (
+                            <Text style={styles.mrp}>{formatPrice(getMRP())}</Text>
                         )}
-                        <Text style={styles.price}>Rs{getPrice()}</Text>
-                        {isOnSale() && (
+                        <Text style={styles.price}>{formatPrice(getPrice())}</Text>
+                        {isOnSale() && getDiscountPercentage() > 0 && (
                             <View style={styles.discountBadge}>
                                 <Text style={styles.discountText}>
                                     {getDiscountPercentage()}% OFF
@@ -290,26 +364,36 @@ const ProductScreen = ({ route, navigation }) => {
                         )}
                     </View>
 
+                    {/* Price Range Display */}
+                    {product.priceRange && product.variants && product.variants.length > 1 && (
+                        <Text style={styles.priceRange}>Price Range: {product.priceRange}</Text>
+                    )}
+
                     {product.variants && product.variants.length > 0 && (
                         <View style={styles.section}>
                             <Text style={styles.sectionTitle}>Select Variant</Text>
                             <View style={styles.variantContainer}>
                                 {product.variants.map((variant, index) => (
                                     <TouchableOpacity
-                                        key={variant._id}
+                                        key={index}
                                         style={[
                                             styles.variantButton,
                                             selectedVariant === index && styles.selectedVariant,
+                                            getStock() === 0 && styles.outOfStockVariant,
                                         ]}
                                         onPress={() => {
-                                            setSelectedVariant(index);
-                                            setQuantity(1); // Reset quantity when variant changes
+                                            if (getStock() > 0) {
+                                                setSelectedVariant(index);
+                                                setQuantity(1); // Reset quantity when variant changes
+                                            }
                                         }}
+                                        disabled={getStock() === 0}
                                     >
                                         <Text
                                             style={[
                                                 styles.variantText,
                                                 selectedVariant === index && styles.selectedVariantText,
+                                                getStock() === 0 && styles.outOfStockText,
                                             ]}
                                         >
                                             {variant.name}
@@ -318,18 +402,21 @@ const ProductScreen = ({ route, navigation }) => {
                                             style={[
                                                 styles.variantPrice,
                                                 selectedVariant === index && styles.selectedVariantText,
+                                                getStock() === 0 && styles.outOfStockText,
                                             ]}
                                         >
-                                            Rs{variant.salePrice || variant.price}
+                                            {formatPrice(variant.price)}
                                         </Text>
-                                        {variant.stock <= 5 && variant.stock > 0 && (
+                                        {getStock() === 0 ? (
+                                            <Text style={styles.outOfStockLabel}>Out of Stock</Text>
+                                        ) : getStock() <= 5 && (
                                             <Text
                                                 style={[
                                                     styles.variantStock,
                                                     selectedVariant === index && styles.selectedVariantText,
                                                 ]}
                                             >
-                                                Only {variant.stock} left
+                                                Only {getStock()} left
                                             </Text>
                                         )}
                                     </TouchableOpacity>
@@ -366,15 +453,33 @@ const ProductScreen = ({ route, navigation }) => {
                                     />
                                 </TouchableOpacity>
                             </View>
-                            {/* <Text style={styles.maxQuantityText}>
-                                Maximum {getStock()} items available
-                            </Text> */}
                         </View>
                     )}
 
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Description</Text>
                         <Text style={styles.desc}>{product.description}</Text>
+                    </View>
+
+                    {/* Additional Product Info */}
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Product Information</Text>
+                        <View style={styles.infoRow}>
+                            <Text style={styles.infoLabel}>Product ID:</Text>
+                            <Text style={styles.infoValue}>{product.id || product._id}</Text>
+                        </View>
+                        <View style={styles.infoRow}>
+                            <Text style={styles.infoLabel}>Total Stock:</Text>
+                            <Text style={styles.infoValue}>{product.stock}</Text>
+                        </View>
+                        {product.createdAt && (
+                            <View style={styles.infoRow}>
+                                <Text style={styles.infoLabel}>Added:</Text>
+                                <Text style={styles.infoValue}>
+                                    {new Date(product.createdAt).toLocaleDateString()}
+                                </Text>
+                            </View>
+                        )}
                     </View>
                 </View>
             </ScrollView>
@@ -384,16 +489,27 @@ const ProductScreen = ({ route, navigation }) => {
                 <View style={styles.totalPrice}>
                     <Text style={styles.totalLabel}>Total: </Text>
                     <Text style={styles.totalAmount}>
-                        Rs{(getPrice() * quantity).toFixed(0)}
+                        {formatPrice(getPrice() * quantity)}
                     </Text>
                 </View>
                 <TouchableOpacity
-                    style={[styles.cartBtn, !isInStock() && styles.disabledCartBtn]}
-                    disabled={!isInStock()}
+                    style={[
+                        styles.cartBtn,
+                        (!isInStock() || addingToCart) && styles.disabledCartBtn
+                    ]}
+                    disabled={!isInStock() || addingToCart}
+                    onPress={handleAddToCart}
                 >
-                    <Text style={styles.cartBtnText}>
-                        {isInStock() ? 'Add to Cart' : 'Out of Stock'}
-                    </Text>
+                    {addingToCart ? (
+                        <View style={styles.loadingButtonContent}>
+                            <ActivityIndicator size="small" color="#fff" style={{ marginRight: 8 }} />
+                            <Text style={styles.cartBtnText}>Adding...</Text>
+                        </View>
+                    ) : (
+                        <Text style={styles.cartBtnText}>
+                            {isInStock() ? 'Add to Cart' : 'Out of Stock'}
+                        </Text>
+                    )}
                 </TouchableOpacity>
             </View>
 
@@ -533,7 +649,8 @@ const styles = StyleSheet.create({
     ratingContainer: { flex: 1 },
     category: { fontSize: 14, color: '#666' },
     stockStatus: { fontSize: 14, fontWeight: '600' },
-    priceRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 24 },
+    priceRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+    priceRange: { fontSize: 14, color: '#666', marginBottom: 12, fontStyle: 'italic' },
     mrp: { color: '#999', textDecorationLine: 'line-through', fontSize: 16, marginRight: 12 },
     price: { fontSize: 24, fontWeight: 'bold', color: '#00C851', marginRight: 12 },
     discountBadge: {
@@ -555,10 +672,13 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     selectedVariant: { borderColor: '#00C851', backgroundColor: '#00C851' },
+    outOfStockVariant: { borderColor: '#ccc', backgroundColor: '#f8f8f8' },
     variantText: { fontSize: 14, fontWeight: '600', color: '#333' },
     selectedVariantText: { color: '#fff' },
+    outOfStockText: { color: '#999' },
     variantPrice: { fontSize: 12, color: '#666', marginTop: 2 },
     variantStock: { fontSize: 10, color: '#ff4757', marginTop: 2 },
+    outOfStockLabel: { fontSize: 10, color: '#ff4757', marginTop: 2, fontWeight: 'bold' },
     quantityContainer: { flexDirection: 'row', alignItems: 'center' },
     quantityButton: {
         width: 40,
@@ -570,8 +690,22 @@ const styles = StyleSheet.create({
     },
     disabledButton: { backgroundColor: '#f8f8f8' },
     quantityText: { fontSize: 18, fontWeight: '600', marginHorizontal: 20, color: '#333' },
-    maxQuantityText: { fontSize: 12, color: '#666', marginTop: 8 },
     desc: { fontSize: 16, lineHeight: 24, color: '#666' },
+    infoRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingVertical: 4,
+    },
+    infoLabel: {
+        fontSize: 14,
+        color: '#666',
+        fontWeight: '500',
+    },
+    infoValue: {
+        fontSize: 14,
+        color: '#333',
+        fontWeight: '400',
+    },
     footer: {
         position: 'absolute',
         bottom: 0,
@@ -598,6 +732,11 @@ const styles = StyleSheet.create({
     },
     disabledCartBtn: { backgroundColor: '#ccc' },
     cartBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+    loadingButtonContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
     modalContainer: {
         flex: 1,
         backgroundColor: 'rgba(0,0,0,0.9)',

@@ -11,6 +11,7 @@ const useGet = (endpoint, runOnMount = true) => {
         try {
             setLoading(true);
             const res = await axiosAuth.get(endpoint);
+            console.log(endpoint);
             setData(res.data);
         } catch (err) {
             setError(err.response?.data?.message || err.message);

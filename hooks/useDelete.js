@@ -4,13 +4,13 @@ import useAxiosAuth from './useAxiosAuth';
 
 const baseUrl = 'http://192.168.1.4:5000';
 
-const usePost = () => {
+const useDelete = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [errorCode, setErrorCode] = useState(null);
     const axiosAuth = useAxiosAuth();
 
-    const post = async (endpoint, data, useAuth = false) => {
+    const deleteRequest = async (endpoint, useAuth = false) => {
         setLoading(true);
         setError(null);
         setErrorCode(null);
@@ -20,25 +20,24 @@ const usePost = () => {
 
             let response;
             if (useAuth) {
-
                 const cleanEndpoint = endpoint.startsWith('/api') ? endpoint.substring(4) : endpoint;
-                console.log('Auth request to:', cleanEndpoint);
-                response = await axiosAuth.post(cleanEndpoint, data);
+                console.log('Auth delete request to:', cleanEndpoint);
+                response = await axiosAuth.delete(cleanEndpoint);
             } else {
                 // For non-authenticated requests, use regular axios
-                console.log('Regular request to:', baseUrl + endpoint);
-                response = await axios.post(baseUrl + endpoint, data);
+                console.log('Regular delete request to:', baseUrl + endpoint);
+                response = await axios.delete(baseUrl + endpoint);
             }
 
             return response.data;
         } catch (err) {
-            console.error('Post request error:', err);
+            console.error('Delete request error:', err);
             console.error('Error response:', err.response?.data);
 
             const errorMessage = err.response?.data?.message ||
                 err.response?.data?.error ||
                 err.message ||
-                'Request failed';
+                'Delete request failed';
 
             setError(errorMessage);
             setErrorCode(err?.response?.status);
@@ -48,7 +47,7 @@ const usePost = () => {
         }
     };
 
-    return { post, loading, error, errorCode };
+    return { deleteRequest, loading, error, errorCode };
 };
 
-export default usePost;
+export default useDelete;

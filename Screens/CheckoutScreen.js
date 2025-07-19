@@ -1,73 +1,35 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
+    ScrollView,
     View,
     Text,
-    StyleSheet,
     Image,
     TouchableOpacity,
-    ScrollView,
     FlatList,
-    Modal
+    Modal,
+    Alert,
+    ActivityIndicator
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import useGet from '../hooks/useGet';
+import usePost from '../hooks/usePost';
+import usePatch from '../hooks/usePatch';
+import useDelete from '../hooks/useDelete';
+import axios from 'axios';
 
-const cartItems = [
-    {
-        id: '1',
-        title: 'Fortune Sun Lite Refined Sunflower Oil',
-        size: '5 L',
-        price: 12,
-        image: require('../assets/cat1.png'),
-        quantity: 1,
-    },
-    {
-        id: '2',
-        title: 'Aashirvaad Shudh Aata',
-        size: '10 kg',
-        price: 12,
-        image: require('../assets/cat1.png'),
-        quantity: 1,
-    },
-];
-
-const recommendations = [
-    {
-        id: '3',
-        title: 'Surf Excel Easy Wash Detergent Power',
-        size: '500 ml',
-        price: 12,
-        oldPrice: 14,
-        image: require('../assets/cat1.png'),
-    },
-    {
-        id: '4',
-        title: 'Fortune Arhar Dal (Toor Dal)',
-        size: '1 kg',
-        price: 10,
-        oldPrice: 12,
-        image: require('../assets/cat1.png'),
-    },
-    {
-        id: '453',
-        title: 'Surf Excel Easy Wash Detergent Power',
-        size: '500 ml',
-        price: 12,
-        oldPrice: 14,
-        image: require('../assets/cat1.png'),
-    },
-    {
-        id: '14',
-        title: 'Fortune Arhar Dal (Toor Dal)',
-        size: '1 kg',
-        price: 10,
-        oldPrice: 12,
-        image: require('../assets/cat1.png'),
-    },
-];
+const baseUrl = 'http://192.168.1.4:5000/api';
 
 export default function CheckoutScreen() {
     const navigation = useNavigation();
     const route = useRoute();
+
+    // Backend hooks
+    const { data: cartData, loading: cartLoading, error: cartError, refetch: refetchCart } = useGet('/cart');
+    const { post, loading: postLoading } = usePost();
+    const { patch, loading: patchLoading } = usePatch();
+    const { deleteRequest, loading: deleteLoading } = useDelete();
+
+    // Local state
     const [selectedAddress, setSelectedAddress] = useState({
         type: 'Home',
         address: '6391 Elgin St. Celina, Delaware',
@@ -77,62 +39,219 @@ export default function CheckoutScreen() {
         { id: '2', type: 'Work', address: '1125 Walnut St. Springfield, IL' },
     ]);
     const [modalVisible, setModalVisible] = useState(false);
+    const [recommendations, setRecommendations] = useState([]);
+    const [loadingRecommendations, setLoadingRecommendations] = useState(false);
+
+    const cartCategories = useMemo(() => {
+        if (!cartData?.cart) return [];
+        return [...new Set(cartData.cart.map(item => item.product.brand))];
+    }, [cartData]);
+
+    useEffect(() => {
+        const fetchRecommendations = async () => {
+            if (cartCategories.length === 0) return;
+
+            setLoadingRecommendations(true);
+            try {
+                const response = await axios.get(`${baseUrl}/products?brand=${cartCategories[0]}`);
+                if (response.data) {
+                    const filtered = response.data?.slice(0, 4) || [];
+                    setRecommendations(filtered);
+                }
+            } catch (error) {
+                console.error('Error fetching recommendations:', error);
+            } finally {
+                setLoadingRecommendations(false);
+            }
+        };
+
+        fetchRecommendations();
+    }, [cartCategories, cartData]);
+
     useEffect(() => {
         if (route.params?.newAddress) {
             setSelectedAddress(route.params.newAddress);
             setSavedAddresses(prev => [...prev, route.params.newAddress]);
         }
     }, [route.params]);
-    return (
-        <ScrollView style={styles.container}>
-            {/* <Text style={[styles.heading, { textAlign: "center" }]}>Checkout</Text> */}
 
-            {/* Cart Items */}
-            {cartItems.map(item => (
-                <View style={styles.cartItem} key={item.id}>
-                    <Image source={item.image} style={styles.cartImage} />
-                    <View style={{ flex: 1 }}>
-                        <Text style={styles.cartTitle}>{item.title}</Text>
-                        <Text style={{ color: "#777" }}>{item.size}</Text>
-                        <View style={{ display: "flex", flexDirection: 'row', justifyContent: 'space-between', alignItems: "center" }}>
-                            <Text style={styles.cartPrice}>${item.price}</Text>
+    const removeFromCart = async (cartItemId) => {
+        const result = await deleteRequest(`/api/cart/remove/${cartItemId}`, true);
+        if (result) {
+            refetchCart(); // Refresh cart data
+        }
+    };
 
-                            <View style={styles.qtyRow}>
-                                <TouchableOpacity>
-                                    <Text style={styles.qtyBtn}>-</Text>
-                                </TouchableOpacity>
-                                <Text style={styles.qtyText}>{item.quantity}</Text>
-                                <TouchableOpacity>
-                                    <Text style={styles.qtyBtn}>+</Text>
-                                </TouchableOpacity>
-                            </View>
-                        </View>
+    const updateQuantity = async (cartItemId, newQuantity) => {
+        if (newQuantity <= 0) {
+            Alert.alert(
+                'Remove Item',
+                'Do you want to remove this item from cart?',
+                [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                        text: 'Remove',
+                        style: 'destructive',
+                        onPress: () => removeFromCart(cartItemId)
+                    }
+                ]
+            );
+            return;
+        }
+
+        updateCartQuantity(cartItemId, newQuantity);
+    };
+
+    const updateCartQuantity = async (cartItemId, quantity) => {
+        const result = await patch(`/api/cart/update/${cartItemId}`, { quantity });
+        if (result) {
+            refetchCart(); // Refresh cart data
+        }
+    };
+
+    const addToCart = async (product, variantName = 'Default') => {
+        const result = await post('/api/cart/add', {
+            productId: product._id,
+            quantity: 1,
+            variantName: variantName
+        }, true);
+
+        if (result) {
+            Alert.alert('Success', 'Item added to cart!');
+            refetchCart(); // Refresh cart data
+        }
+    };
+
+    const renderCartItem = (item) => (
+        <View style={styles.cartItem} key={item._id}>
+            <Image
+                source={{ uri: item.product.images[0] }}
+                style={styles.cartImage}
+            />
+            <View style={{ flex: 1 }}>
+                <Text style={styles.cartTitle}>{item.product.name}</Text>
+                <Text style={{ color: "#777" }}>{item.variant.name}</Text>
+                <Text style={{ color: "#777" }}>Brand: {item.product.brand}</Text>
+                <View style={{
+                    display: "flex",
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: "center"
+                }}>
+                    <View>
+                        <Text style={styles.cartPrice}>${item.variant.currentPrice}</Text>
+                        {item.variant.isOnSale && (
+                            <Text style={styles.oldPrice}>${item.variant.price}</Text>
+                        )}
+                    </View>
+
+                    <View style={styles.qtyRow}>
+                        <TouchableOpacity
+                            onPress={() => updateQuantity(item._id, item.quantity - 1)}
+                            disabled={patchLoading || deleteLoading}
+                        >
+                            <Text style={styles.qtyBtn}>-</Text>
+                        </TouchableOpacity>
+                        <Text style={styles.qtyText}>{item.quantity}</Text>
+                        <TouchableOpacity
+                            onPress={() => updateQuantity(item._id, item.quantity + 1)}
+                            disabled={patchLoading || deleteLoading}
+                        >
+                            <Text style={styles.qtyBtn}>+</Text>
+                        </TouchableOpacity>
                     </View>
                 </View>
-            ))}
+            </View>
+        </View>
+    );
+
+    const renderRecommendationItem = ({ item }) => (
+        <TouchableOpacity style={styles.recommendCard} onPress={() => navigation.navigate("Product", { productId: item._id })}>
+            <Image
+                source={{ uri: item.images[0] }}
+                style={styles.recommendImage}
+            />
+            <Text numberOfLines={2} style={styles.recommendTitle}>{item.name}</Text>
+            <Text style={{ color: "#777" }}>{item.brand}</Text>
+            <View style={styles.priceRow}>
+                <Text style={styles.recommendPrice}>
+                    ${item.variants?.[0]?.currentPrice || item.variants?.[0]?.price}
+                </Text>
+                {item.variants?.[0]?.isOnSale && (
+                    <Text style={styles.recommendOldPrice}>
+                        ${item.variants?.[0]?.price}
+                    </Text>
+                )}
+            </View>
+            <TouchableOpacity
+                style={styles.addBtn}
+                onPress={() => addToCart(item)}
+                disabled={postLoading}
+            >
+                <Text style={styles.addBtnText}>
+                    {postLoading ? 'Adding...' : 'Add'}
+                </Text>
+            </TouchableOpacity>
+        </TouchableOpacity>
+    );
+
+    if (cartLoading) {
+        return (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                <ActivityIndicator size="large" color="#53B175" />
+                <Text>Loading cart...</Text>
+            </View>
+        );
+    }
+
+    if (cartError) {
+        return (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+                <Text style={{ color: 'red', textAlign: 'center', marginBottom: 20 }}>
+                    Error loading cart: {cartError}
+                </Text>
+                <TouchableOpacity
+                    style={styles.addBtn}
+                    onPress={refetchCart}
+                >
+                    <Text style={styles.addBtnText}>Retry</Text>
+                </TouchableOpacity>
+            </View>
+        );
+    }
+
+    if (!cartData?.cart || cartData.cart.length === 0) {
+        return (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                <Text style={{ fontSize: 18, color: '#777' }}>Your cart is empty</Text>
+                <TouchableOpacity
+                    style={styles.addBtn}
+                    onPress={() => navigation.navigate('Home')}
+                >
+                    <Text style={styles.addBtnText}>Continue Shopping</Text>
+                </TouchableOpacity>
+            </View>
+        );
+    }
+
+    return (
+        <ScrollView style={styles.container}>
+            {/* Cart Items */}
+            {cartData.cart.map(renderCartItem)}
 
             {/* Recommendation Section */}
             <Text style={styles.subheading}>Before you Checkout</Text>
-            <FlatList
-                horizontal
-                data={recommendations}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => (
-                    <View style={styles.recommendCard}>
-                        <Image source={item.image} style={styles.recommendImage} />
-                        <Text numberOfLines={2} style={styles.recommendTitle}>{item.title}</Text>
-                        <Text>{item.size}</Text>
-                        <View style={styles.priceRow}>
-                            <Text style={styles.recommendPrice}>${item.price}</Text>
-                            <Text style={styles.recommendOldPrice}>${item.oldPrice}</Text>
-                        </View>
-                        <TouchableOpacity style={styles.addBtn}>
-                            <Text style={styles.addBtnText}>Add</Text>
-                        </TouchableOpacity>
-                    </View>
-                )}
-                showsHorizontalScrollIndicator={false}
-            />
+            {loadingRecommendations ? (
+                <ActivityIndicator size="small" color="#53B175" style={{ margin: 20 }} />
+            ) : (
+                <FlatList
+                    horizontal
+                    data={recommendations}
+                    keyExtractor={(item) => item._id}
+                    renderItem={renderRecommendationItem}
+                    showsHorizontalScrollIndicator={false}
+                />
+            )}
 
             {/* Coupon Section */}
             <TouchableOpacity style={styles.couponRow}>
@@ -142,21 +261,38 @@ export default function CheckoutScreen() {
 
             {/* Summary Section */}
             <View style={styles.summary}>
-                <View style={{ display: "flex", flexDirection: 'row', justifyContent: "space-between", paddingHorizontal: 10 }}>
-                    <Text style={styles.summaryText}>Item Total:</Text>
-                    <Text style={styles.summaryText}>$24</Text>
+                <View style={{
+                    display: "flex",
+                    flexDirection: 'row',
+                    justifyContent: "space-between",
+                    paddingHorizontal: 10
+                }}>
+                    <Text style={styles.summaryText}>Items ({cartData.summary.totalQuantity}):</Text>
+                    <Text style={styles.summaryText}>${cartData.summary.total.toFixed(2)}</Text>
                 </View>
 
-                <View style={{ display: "flex", flexDirection: 'row', justifyContent: "space-between", paddingHorizontal: 10 }}>
+                <View style={{
+                    display: "flex",
+                    flexDirection: 'row',
+                    justifyContent: "space-between",
+                    paddingHorizontal: 10
+                }}>
                     <Text style={styles.summaryText}>Discount:</Text>
-                    <Text style={styles.summaryText}>$24</Text>
+                    <Text style={styles.summaryText}>$0.00</Text>
                 </View>
 
-                <View style={{ display: "flex", flexDirection: 'row', justifyContent: "space-between", paddingHorizontal: 10 }}>
+                <View style={{
+                    display: "flex",
+                    flexDirection: 'row',
+                    justifyContent: "space-between",
+                    paddingHorizontal: 10
+                }}>
                     <Text style={styles.summaryText}>Delivery:</Text>
                     <Text style={{ color: 'green' }}>Free</Text>
                 </View>
-                <Text style={styles.summaryTotal}>Grand Total: $22</Text>
+                <Text style={styles.summaryTotal}>
+                    Grand Total: ${cartData.summary.total.toFixed(2)}
+                </Text>
             </View>
 
             {/* Address Section */}
@@ -196,79 +332,165 @@ export default function CheckoutScreen() {
                 </View>
             </Modal>
 
-            {/* Payment Info */}
-            {/* <Text style={{ fontSize: 14, marginBottom: 8 }}>Pay Using</Text>
-            <Text style={{ fontWeight: 'bold', marginBottom: 10 }}>Visa •••• 6589</Text> */}
-
             {/* Place Order Button */}
-            <TouchableOpacity style={styles.checkoutBtn}>
-                <Text style={styles.checkoutText}>$22   |   Place Order</Text>
+            <TouchableOpacity
+                style={[styles.checkoutBtn, (patchLoading || postLoading || deleteLoading) && { opacity: 0.7 }]}
+                disabled={patchLoading || postLoading || deleteLoading}
+            >
+                <Text style={styles.checkoutText}>
+                    ${cartData.summary.total.toFixed(2)}   |   Place Order
+                </Text>
             </TouchableOpacity>
         </ScrollView>
     );
 }
 
-const styles = StyleSheet.create({
-    container: { padding: 16, backgroundColor: "white" },
-    heading: { fontSize: 24, fontWeight: 'bold', marginBottom: 20 },
-    cartItem: { flexDirection: 'row', marginBottom: 16, backgroundColor: "#f9f9f9", padding: 10, borderRadius: 10 },
-    cartImage: { width: 80, height: 80, marginRight: 12, borderRadius: 8 },
-    cartTitle: { fontWeight: 'bold', fontSize: 16 },
-    cartPrice: { color: 'green', marginTop: 4 },
-    qtyRow: { flexDirection: 'row', alignItems: 'center', marginTop: 10 },
+const styles = {
+    container: {
+        flex: 1,
+        backgroundColor: '#fff',
+        padding: 20,
+    },
+    cartItem: {
+        flexDirection: 'row',
+        backgroundColor: '#f8f8f8',
+        padding: 15,
+        borderRadius: 10,
+        marginBottom: 15,
+    },
+    cartImage: {
+        width: 60,
+        height: 60,
+        borderRadius: 8,
+        marginRight: 15,
+    },
+    cartTitle: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        marginBottom: 5,
+    },
+    cartPrice: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#53B175',
+    },
+    oldPrice: {
+        fontSize: 14,
+        textDecorationLine: 'line-through',
+        color: '#999',
+    },
+    qtyRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
     qtyBtn: {
         fontSize: 20,
+        fontWeight: 'bold',
         paddingHorizontal: 12,
-        paddingVertical: 4,
-        borderRadius: 4,
-        backgroundColor: '#d1d5db'
+        paddingVertical: 5,
+        backgroundColor: '#e0e0e0',
+        textAlign: 'center',
+        minWidth: 35,
     },
-    qtyText: { marginHorizontal: 10, fontSize: 16 },
-    subheading: { fontSize: 18, fontWeight: 'bold', marginVertical: 16 },
+    qtyText: {
+        fontSize: 16,
+        paddingHorizontal: 15,
+    },
+    subheading: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginVertical: 20,
+    },
     recommendCard: {
-        width: 140,
-        backgroundColor: '#f9f9f9',
-        padding: 8,
+        width: 150,
+        backgroundColor: '#f8f8f8',
+        padding: 10,
         borderRadius: 10,
-        marginRight: 10
+        marginRight: 15,
     },
-    recommendImage: { width: '100%', height: 80, resizeMode: 'contain', marginBottom: 6 },
-    recommendTitle: { fontSize: 13, fontWeight: '500' },
-    recommendPrice: { color: 'green', fontWeight: 'bold' },
+    recommendImage: {
+        width: '100%',
+        height: 80,
+        borderRadius: 8,
+        marginBottom: 8,
+    },
+    recommendTitle: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        marginBottom: 5,
+    },
+    priceRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginVertical: 5,
+    },
+    recommendPrice: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: '#53B175',
+        marginRight: 8,
+    },
     recommendOldPrice: {
-        textDecorationLine: 'line-through',
-        color: 'gray',
         fontSize: 12,
-        marginLeft: 5
+        textDecorationLine: 'line-through',
+        color: '#999',
     },
-    priceRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 4 },
-    addBtn: { backgroundColor: '#22c55e', padding: 14, borderRadius: 8, marginTop: 30, alignItems: 'center' },
-    addBtnText: { color: 'white', fontWeight: 'bold' },
+    addBtn: {
+        backgroundColor: '#53B175',
+        paddingVertical: 8,
+        borderRadius: 5,
+        alignItems: 'center',
+        marginTop: 5,
+    },
+    addBtnText: {
+        color: 'white',
+        fontWeight: 'bold',
+    },
     couponRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        backgroundColor: '#f3f4f6',
-        padding: 12,
-        borderRadius: 6,
-        marginTop: 24,
-        alignItems: 'center'
+        alignItems: 'center',
+        backgroundColor: '#f8f8f8',
+        padding: 15,
+        borderRadius: 10,
+        marginVertical: 20,
     },
-    summary: { marginTop: 20, borderTopWidth: 1, paddingTop: 16, borderColor: '#ccc' },
-    summaryText: { fontSize: 16, marginBottom: 18 },
-    summaryTotal: { fontSize: 18, fontWeight: 'bold', marginTop: 8 },
+    summary: {
+        backgroundColor: '#f8f8f8',
+        padding: 15,
+        borderRadius: 10,
+        marginBottom: 20,
+    },
+    summaryText: {
+        fontSize: 16,
+        marginBottom: 8,
+    },
+    summaryTotal: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        textAlign: 'center',
+        marginTop: 10,
+        paddingTop: 10,
+        borderTopWidth: 1,
+        borderTopColor: '#ddd',
+    },
     addressRow: {
-        marginTop: 30,
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-
+        marginBottom: 5,
     },
     checkoutBtn: {
-        marginBottom: 30,
-        backgroundColor: '#22c55e',
-        padding: 16,
+        backgroundColor: '#53B175',
+        paddingVertical: 15,
         borderRadius: 10,
-        alignItems: 'center'
+        alignItems: 'center',
+        marginTop: 20,
+        marginBottom: 40,
     },
-    checkoutText: { color: 'white', fontSize: 16, fontWeight: 'bold' }
-});
+    checkoutText: {
+        color: 'white',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+};

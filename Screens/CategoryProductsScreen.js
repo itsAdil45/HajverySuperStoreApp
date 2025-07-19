@@ -230,6 +230,153 @@ const CategoryProductsScreen = ({ navigation, route }) => {
 
 
 const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#fff',
+        padding: 20,
+    },
+    cartItem: {
+        flexDirection: 'row',
+        backgroundColor: '#f8f8f8',
+        padding: 15,
+        borderRadius: 10,
+        marginBottom: 15,
+    },
+    cartImage: {
+        width: 60,
+        height: 60,
+        borderRadius: 8,
+        marginRight: 15,
+    },
+    cartTitle: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        marginBottom: 5,
+    },
+    cartPrice: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#53B175',
+    },
+    oldPrice: {
+        fontSize: 14,
+        textDecorationLine: 'line-through',
+        color: '#999',
+    },
+    qtyRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    qtyBtn: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        paddingHorizontal: 12,
+        paddingVertical: 5,
+        backgroundColor: '#e0e0e0',
+        textAlign: 'center',
+        minWidth: 35,
+    },
+    qtyText: {
+        fontSize: 16,
+        paddingHorizontal: 15,
+    },
+    subheading: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginVertical: 20,
+    },
+    recommendCard: {
+        width: 150,
+        backgroundColor: '#f8f8f8',
+        padding: 10,
+        borderRadius: 10,
+        marginRight: 15,
+    },
+    recommendImage: {
+        width: '100%',
+        height: 80,
+        borderRadius: 8,
+        marginBottom: 8,
+    },
+    recommendTitle: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        marginBottom: 5,
+    },
+    priceRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginVertical: 5,
+    },
+    recommendPrice: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: '#53B175',
+        marginRight: 8,
+    },
+    recommendOldPrice: {
+        fontSize: 12,
+        textDecorationLine: 'line-through',
+        color: '#999',
+    },
+    addBtn: {
+        backgroundColor: '#53B175',
+        paddingVertical: 8,
+        borderRadius: 5,
+        alignItems: 'center',
+        marginTop: 5,
+    },
+    addBtnText: {
+        color: 'white',
+        fontWeight: 'bold',
+    },
+    couponRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        backgroundColor: '#f8f8f8',
+        padding: 15,
+        borderRadius: 10,
+        marginVertical: 20,
+    },
+    summary: {
+        backgroundColor: '#f8f8f8',
+        padding: 15,
+        borderRadius: 10,
+        marginBottom: 20,
+    },
+    summaryText: {
+        fontSize: 16,
+        marginBottom: 8,
+    },
+    summaryTotal: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        textAlign: 'center',
+        marginTop: 10,
+        paddingTop: 10,
+        borderTopWidth: 1,
+        borderTopColor: '#ddd',
+    },
+    addressRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 5,
+    },
+    checkoutBtn: {
+        backgroundColor: '#53B175',
+        paddingVertical: 15,
+        borderRadius: 10,
+        alignItems: 'center',
+        marginTop: 20,
+        marginBottom: 40,
+    },
+    checkoutText: {
+        color: 'white',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
     container: { flex: 1, backgroundColor: '#fff' },
     header: {
         padding: 15,
