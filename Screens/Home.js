@@ -13,7 +13,8 @@ import {
 import { Ionicons, Feather } from '@expo/vector-icons'; // or react-native-vector-icons
 import useGet from '../hooks/useGet';
 import { useEffect, useState } from 'react';
-
+import { useContext } from 'react';
+import { UserContext } from '../contexts/UserContext'; // adjust path
 const bestDeals = [
     {
         id: '1',
@@ -36,7 +37,8 @@ const bestDeals = [
 const Home = ({ navigation }) => {
     const { data, loading, error, refetch } = useGet('/categories/all_main');
     const [categories, setCategories] = useState([]);
-
+    const [keyword, setKeyword] = useState('');
+    const { LoggedInUser } = useContext(UserContext);
     useEffect(() => {
         if (data && data.categories) {
             setCategories(data.categories);
@@ -69,26 +71,47 @@ const Home = ({ navigation }) => {
             <View style={styles.header}>
                 <View>
                     <Text style={styles.locationTitle}>Home</Text>
-                    <Text style={styles.locationText}>6391 Elgin St. Celina, Delaware 10299</Text>
+                    <Text style={styles.locationText}>{LoggedInUser?.address.split("+")[0].trim()}</Text>
                 </View>
-                <Feather name="shopping-cart" size={22} color="#000" />
+                <TouchableOpacity onPress={() => navigation.navigate("CartTab")}>
+                    <Feather name="shopping-cart" size={22} color="#000" />
+                </TouchableOpacity>
             </View>
 
             {/* Search Bar */}
             <View style={styles.searchContainer}>
                 <View style={styles.searchBox}>
-                    <Feather name="search" size={18} color="#aaa" />
-                    <TextInput placeholder="Search" style={styles.searchInput} />
+                    <TextInput
+                        placeholder="Search"
+                        style={styles.searchInput}
+                        value={keyword}
+                        onChangeText={setKeyword}
+                        returnKeyType="search"
+                        onSubmitEditing={() => {
+                            if (keyword?.trim()) {
+                                navigation.navigate('SearchResult', { search: keyword.trim() });
+                            }
+                        }}
+
+                    />
                 </View>
-                <TouchableOpacity style={styles.filterBtn}>
-                    <Ionicons name="options-outline" size={18} color="#fff" />
+                <TouchableOpacity
+                    style={styles.filterBtn}
+                    onPress={() => {
+                        if (keyword?.trim()) {
+                            navigation.navigate('SearchResult', { search: keyword.trim() });
+                        }
+                    }}
+                >
+                    <Ionicons name="search" size={18} color="#fff" />
                 </TouchableOpacity>
             </View>
+
 
             {/* Shop by Category */}
             <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>Shop By Category</Text>
-                <TouchableOpacity onPress={() => navigation.navigate("main Categories")}>
+                <TouchableOpacity onPress={() => navigation.navigate("CategoryTab")}>
                     <Text style={styles.seeAll}>See All</Text>
                 </TouchableOpacity>
             </View>

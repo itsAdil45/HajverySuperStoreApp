@@ -24,6 +24,7 @@ import PaymentScreen from './Screens/PaymentScreen';
 import OrderScreen from './Screens/OrderScreen';
 import EditProfileScreen from './Screens/EditProfileScreen';
 import MainCategoriesScreen from './Screens/MainCategoriesScreen';
+import SearchResultScreen from './Screens/SearchResultScreen';
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 const Drawer = createDrawerNavigator();
@@ -144,6 +145,20 @@ const MainDrawerNavigator = () => {
                     drawerLabel: 'Home',
                 }}
             />
+            <Drawer.Screen
+                name="EditProfile"
+                component={EditProfileScreen}
+                options={{
+                    drawerLabel: 'Edit Profile',
+                }}
+            />
+            <Drawer.Screen
+                name="Orders"
+                component={OrderScreen}
+                options={{
+                    drawerLabel: 'Orders',
+                }}
+            />
         </Drawer.Navigator>
     );
 };
@@ -168,8 +183,18 @@ const MainStackNavigator = () => {
                 options={{ headerShown: true }}
             />
             <Stack.Screen
+                name="SearchResult"
+                component={SearchResultScreen}
+                options={{ headerShown: true }}
+            />
+            <Stack.Screen
                 name="Product"
                 component={ProductScreen}
+                options={{ headerShown: true }}
+            />
+            <Stack.Screen
+                name="Payment"
+                component={PaymentScreen}
                 options={{ headerShown: false }}
             />
             <Stack.Screen
@@ -177,6 +202,7 @@ const MainStackNavigator = () => {
                 component={LocationPickerScreen}
                 options={{ headerShown: false }}
             />
+
         </Stack.Navigator>
     );
 };
@@ -189,7 +215,7 @@ const AppNavigator = () => {
     useEffect(() => {
         const timeout = setTimeout(() => {
             setShowSplash(false);
-        }, 2000);
+        }, 4000);
         return () => clearTimeout(timeout);
     }, []);
 

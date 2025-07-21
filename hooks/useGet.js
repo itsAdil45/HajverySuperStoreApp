@@ -11,20 +11,22 @@ const useGet = (endpoint, runOnMount = true) => {
         try {
             setLoading(true);
             const res = await axiosAuth.get(endpoint);
-            console.log(endpoint);
             setData(res.data);
         } catch (err) {
-            setError(err.response?.data?.message || err.message);
+            setError(err);
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        if (runOnMount) fetchData();
-    }, [endpoint]);
+        if (runOnMount) {
+            fetchData();
+        }
+    }, [endpoint]); // this will re-run if endpoint changes
 
     return { data, loading, error, refetch: fetchData };
 };
+
 
 export default useGet;

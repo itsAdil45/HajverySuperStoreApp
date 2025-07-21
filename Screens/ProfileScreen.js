@@ -14,81 +14,40 @@ export default function ProfileScreen({ navigation }) {
                         <View style={styles.avatarPlaceholder}>
                             <User size={40} color="#22c55e" />
                         </View>
-                        <TouchableOpacity style={styles.editIcon} activeOpacity={0.7}>
-                            <Pencil size={14} color="#fff" />
-                        </TouchableOpacity>
                     </View>
                     <Text style={styles.name}>Smith Mate</Text>
                     <Text style={styles.email}>smithmate@example.com</Text>
                     <View style={styles.profileStats}>
                         <View style={styles.statItem}>
                             <Text style={styles.statNumber}>12</Text>
-                            <Text style={styles.statLabel}>Orders</Text>
-                        </View>
-                        <View style={styles.statDivider} />
-                        <View style={styles.statItem}>
-                            <Text style={styles.statNumber}>4.8</Text>
-                            <Text style={styles.statLabel}>Rating</Text>
-                        </View>
-                        <View style={styles.statDivider} />
-                        <View style={styles.statItem}>
-                            <Text style={styles.statNumber}>2y</Text>
-                            <Text style={styles.statLabel}>Member</Text>
+                            <Text style={styles.statLabel}>Total Orders</Text>
                         </View>
                     </View>
                 </View>
             </View>
 
-            {/* Quick Actions */}
-            <View style={styles.quickActions}>
-                <TouchableOpacity style={styles.quickActionItem} activeOpacity={0.7}>
-                    <View style={[styles.quickActionIcon, { backgroundColor: '#fef3c7' }]}>
-                        <Package size={20} color="#f59e0b" />
-                    </View>
-                    <Text style={styles.quickActionText}>Orders</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.quickActionItem} activeOpacity={0.7}>
-                    <View style={[styles.quickActionIcon, { backgroundColor: '#fce7f3' }]}>
-                        <Heart size={20} color="#ec4899" />
-                    </View>
-                    <Text style={styles.quickActionText}>Favorites</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.quickActionItem} activeOpacity={0.7}>
-                    <View style={[styles.quickActionIcon, { backgroundColor: '#e0e7ff' }]}>
-                        <Bell size={20} color="#6366f1" />
-                    </View>
-                    <Text style={styles.quickActionText}>Notifications</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.quickActionItem} activeOpacity={0.7}>
-                    <View style={[styles.quickActionIcon, { backgroundColor: '#f3e8ff' }]}>
-                        <Settings size={20} color="#8b5cf6" />
-                    </View>
-                    <Text style={styles.quickActionText}>Settings</Text>
-                </TouchableOpacity>
-            </View>
+
 
             {/* Options List */}
             <View style={styles.optionList}>
                 <Text style={styles.sectionTitle}>Account</Text>
                 <View style={styles.optionGroup}>
-                    <OptionItem
-                        icon={<Pencil size={20} color="#22c55e" />}
-                        label="Edit Profile"
-                        subtitle="Update your personal information"
-                        iconBg="#dcfce7"
-                    />
+                    <TouchableOpacity onPress={() => navigation.navigate("EditProfile")}>
+                        <OptionItem
+                            icon={<Pencil size={20} color="#22c55e" />}
+                            label="Edit Profile"
+                            subtitle="Update your personal information"
+                            iconBg="#dcfce7"
+
+                        />
+                    </TouchableOpacity>
                     <OptionItem
                         icon={<Lock size={20} color="#3b82f6" />}
                         label="Change Password"
                         subtitle="Secure your account"
                         iconBg="#dbeafe"
                     />
-                    <OptionItem
-                        icon={<CreditCard size={20} color="#8b5cf6" />}
-                        label="Payment Method"
-                        subtitle="Manage your payment options"
-                        iconBg="#f3e8ff"
-                    />
+
                 </View>
 
                 <Text style={styles.sectionTitle}>Orders & Support</Text>

@@ -4,13 +4,13 @@ import useAxiosAuth from './useAxiosAuth';
 
 const baseUrl = 'http://192.168.49.215:5000';
 
-const useDelete = () => {
+const usePut = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [errorCode, setErrorCode] = useState(null);
     const axiosAuth = useAxiosAuth();
 
-    const deleteRequest = async (endpoint, useAuth = false) => {
+    const put = async (endpoint, data, useAuth = false) => {
         setLoading(true);
         setError(null);
         setErrorCode(null);
@@ -21,23 +21,21 @@ const useDelete = () => {
             let response;
             if (useAuth) {
                 const cleanEndpoint = endpoint.startsWith('/api') ? endpoint.substring(4) : endpoint;
-                console.log('Auth delete request to:', cleanEndpoint);
-                response = await axiosAuth.delete(cleanEndpoint);
+                response = await axiosAuth.put(cleanEndpoint, data);
             } else {
-                // For non-authenticated requests, use regular axios
-                console.log('Regular delete request to:', baseUrl + endpoint);
-                response = await axios.delete(baseUrl + endpoint);
+                console.log('Regular request to:', baseUrl + endpoint);
+                response = await axios.put(baseUrl + endpoint, data);
             }
 
             return response.data;
         } catch (err) {
-            console.error('Delete request error:', err);
+            console.error('Put request error:', err);
             console.error('Error response:', err.response?.data);
 
             const errorMessage = err.response?.data?.message ||
                 err.response?.data?.error ||
                 err.message ||
-                'Delete request failed';
+                'Request failed';
 
             setError(errorMessage);
             setErrorCode(err?.response?.status);
@@ -47,7 +45,7 @@ const useDelete = () => {
         }
     };
 
-    return { deleteRequest, loading, error, errorCode };
+    return { put, loading, error, errorCode };
 };
 
-export default useDelete;
+export default usePut;

@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
     ScrollView,
     View,
@@ -10,35 +11,22 @@ import {
     Alert,
     ActivityIndicator
 } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import useGet from '../hooks/useGet';
 import usePost from '../hooks/usePost';
 import usePatch from '../hooks/usePatch';
 import useDelete from '../hooks/useDelete';
 import axios from 'axios';
 
-const baseUrl = 'http://192.168.1.4:5000/api';
+const baseUrl = 'http://192.168.49.215:5000/api';
 
 export default function CheckoutScreen() {
     const navigation = useNavigation();
-    const route = useRoute();
-
-    // Backend hooks
     const { data: cartData, loading: cartLoading, error: cartError, refetch: refetchCart } = useGet('/cart');
     const { post, loading: postLoading } = usePost();
     const { patch, loading: patchLoading } = usePatch();
     const { deleteRequest, loading: deleteLoading } = useDelete();
 
-    // Local state
-    const [selectedAddress, setSelectedAddress] = useState({
-        type: 'Home',
-        address: '6391 Elgin St. Celina, Delaware',
-    });
-    const [savedAddresses, setSavedAddresses] = useState([
-        { id: '1', type: 'Home', address: '6391 Elgin St. Celina, Delaware' },
-        { id: '2', type: 'Work', address: '1125 Walnut St. Springfield, IL' },
-    ]);
-    const [modalVisible, setModalVisible] = useState(false);
     const [recommendations, setRecommendations] = useState([]);
     const [loadingRecommendations, setLoadingRecommendations] = useState(false);
 
@@ -46,6 +34,12 @@ export default function CheckoutScreen() {
         if (!cartData?.cart) return [];
         return [...new Set(cartData.cart.map(item => item.product.brand))];
     }, [cartData]);
+
+    useFocusEffect(
+        useCallback(() => {
+            refetchCart();
+        }, []),
+    );
 
     useEffect(() => {
         const fetchRecommendations = async () => {
@@ -68,12 +62,6 @@ export default function CheckoutScreen() {
         fetchRecommendations();
     }, [cartCategories, cartData]);
 
-    useEffect(() => {
-        if (route.params?.newAddress) {
-            setSelectedAddress(route.params.newAddress);
-            setSavedAddresses(prev => [...prev, route.params.newAddress]);
-        }
-    }, [route.params]);
 
     const removeFromCart = async (cartItemId) => {
         const result = await deleteRequest(`/api/cart/remove/${cartItemId}`, true);
@@ -139,9 +127,9 @@ export default function CheckoutScreen() {
                     alignItems: "center"
                 }}>
                     <View>
-                        <Text style={styles.cartPrice}>${item.variant.currentPrice}</Text>
+                        <Text style={styles.cartPrice}>Rs{item.variant.currentPrice}</Text>
                         {item.variant.isOnSale && (
-                            <Text style={styles.oldPrice}>${item.variant.price}</Text>
+                            <Text style={styles.oldPrice}>Rs{item.variant.price}</Text>
                         )}
                     </View>
 
@@ -175,11 +163,11 @@ export default function CheckoutScreen() {
             <Text style={{ color: "#777" }}>{item.brand}</Text>
             <View style={styles.priceRow}>
                 <Text style={styles.recommendPrice}>
-                    ${item.variants?.[0]?.currentPrice || item.variants?.[0]?.price}
+                    Rs{item.variants?.[0]?.currentPrice || item.variants?.[0]?.price}
                 </Text>
                 {item.variants?.[0]?.isOnSale && (
                     <Text style={styles.recommendOldPrice}>
-                        ${item.variants?.[0]?.price}
+                        Rs{item.variants?.[0]?.price}
                     </Text>
                 )}
             </View>
@@ -226,7 +214,7 @@ export default function CheckoutScreen() {
                 <Text style={{ fontSize: 18, color: '#777' }}>Your cart is empty</Text>
                 <TouchableOpacity
                     style={styles.addBtn}
-                    onPress={() => navigation.navigate('Home')}
+                    onPress={() => navigation.navigate('CategoryTab')}
                 >
                     <Text style={styles.addBtnText}>Continue Shopping</Text>
                 </TouchableOpacity>
@@ -268,7 +256,7 @@ export default function CheckoutScreen() {
                     paddingHorizontal: 10
                 }}>
                     <Text style={styles.summaryText}>Items ({cartData.summary.totalQuantity}):</Text>
-                    <Text style={styles.summaryText}>${cartData.summary.total.toFixed(2)}</Text>
+                    <Text style={styles.summaryText}>Rs{cartData.summary.total.toFixed(2)}</Text>
                 </View>
 
                 <View style={{
@@ -278,7 +266,7 @@ export default function CheckoutScreen() {
                     paddingHorizontal: 10
                 }}>
                     <Text style={styles.summaryText}>Discount:</Text>
-                    <Text style={styles.summaryText}>$0.00</Text>
+                    <Text style={styles.summaryText}>Rs0.00</Text>
                 </View>
 
                 <View style={{
@@ -291,54 +279,19 @@ export default function CheckoutScreen() {
                     <Text style={{ color: 'green' }}>Free</Text>
                 </View>
                 <Text style={styles.summaryTotal}>
-                    Grand Total: ${cartData.summary.total.toFixed(2)}
+                    Grand Total: Rs{cartData.summary.total.toFixed(2)}
                 </Text>
             </View>
 
-            {/* Address Section */}
-            <View style={styles.addressRow}>
-                <Text style={{ fontWeight: 'bold' }}>Delivering to {selectedAddress.type}</Text>
-                <TouchableOpacity onPress={() => setModalVisible(true)}>
-                    <Text style={{ color: '#53B175' }}>Change</Text>
-                </TouchableOpacity>
-            </View>
-            <Text style={{ marginBottom: 10, color: "#777" }}>{selectedAddress.address}</Text>
-
-            <Modal visible={modalVisible} animationType="slide" onRequestClose={() => setModalVisible(false)}>
-                <View style={{ flex: 1, backgroundColor: 'white', padding: 20, paddingTop: 60 }}>
-                    <Text style={{ fontWeight: 'bold', fontSize: 18, marginBottom: 20 }}>Select an Address</Text>
-                    {savedAddresses.map((item) => (
-                        <TouchableOpacity
-                            key={item.id}
-                            style={{ paddingVertical: 12 }}
-                            onPress={() => {
-                                setSelectedAddress(item);
-                                setModalVisible(false);
-                            }}
-                        >
-                            <Text style={{ fontWeight: 'bold' }}>{item.type}</Text>
-                            <Text style={{ color: '#777' }}>{item.address}</Text>
-                        </TouchableOpacity>
-                    ))}
-                    <TouchableOpacity
-                        style={styles.addBtn}
-                        onPress={() => {
-                            setModalVisible(false);
-                            navigation.navigate('LocationPickerScreen');
-                        }}
-                    >
-                        <Text style={styles.addBtnText}>+ Add New Address</Text>
-                    </TouchableOpacity>
-                </View>
-            </Modal>
 
             {/* Place Order Button */}
             <TouchableOpacity
                 style={[styles.checkoutBtn, (patchLoading || postLoading || deleteLoading) && { opacity: 0.7 }]}
                 disabled={patchLoading || postLoading || deleteLoading}
+                onPress={() => navigation.navigate("Payment", { total: cartData.summary.total.toFixed(2) })}
             >
                 <Text style={styles.checkoutText}>
-                    ${cartData.summary.total.toFixed(2)}   |   Place Order
+                    Rs{cartData.summary.total.toFixed(2)}   |   Place Order
                 </Text>
             </TouchableOpacity>
         </ScrollView>
@@ -437,10 +390,11 @@ const styles = {
     },
     addBtn: {
         backgroundColor: '#53B175',
-        paddingVertical: 8,
+        paddingVertical: 10,
         borderRadius: 5,
         alignItems: 'center',
         marginTop: 5,
+        paddingHorizontal: 20
     },
     addBtnText: {
         color: 'white',
@@ -474,12 +428,8 @@ const styles = {
         borderTopWidth: 1,
         borderTopColor: '#ddd',
     },
-    addressRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 5,
-    },
+
+
     checkoutBtn: {
         backgroundColor: '#53B175',
         paddingVertical: 15,

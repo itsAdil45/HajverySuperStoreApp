@@ -19,7 +19,7 @@ const MainCategoriesScreen = ({ navigation }) => {
 
     // Construct API URL with applied search query
     const apiUrl = appliedSearchQuery.trim()
-        ? `/categories/all_main?name=${encodeURIComponent(appliedSearchQuery.trim())}`
+        ? `/categories/all_main?search=${encodeURIComponent(appliedSearchQuery.trim())}`
         : '/categories/all_main';
 
     const { data, loading, error, refetch } = useGet(apiUrl);

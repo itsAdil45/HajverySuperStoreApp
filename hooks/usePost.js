@@ -2,7 +2,7 @@ import { useState } from 'react';
 import axios from 'axios';
 import useAxiosAuth from './useAxiosAuth';
 
-const baseUrl = 'http://192.168.1.4:5000';
+const baseUrl = 'http://192.168.49.215:5000';
 
 const usePost = () => {
     const [loading, setLoading] = useState(false);
@@ -22,10 +22,8 @@ const usePost = () => {
             if (useAuth) {
 
                 const cleanEndpoint = endpoint.startsWith('/api') ? endpoint.substring(4) : endpoint;
-                console.log('Auth request to:', cleanEndpoint);
                 response = await axiosAuth.post(cleanEndpoint, data);
             } else {
-                // For non-authenticated requests, use regular axios
                 console.log('Regular request to:', baseUrl + endpoint);
                 response = await axios.post(baseUrl + endpoint, data);
             }

@@ -1,123 +1,224 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Image } from 'react-native';
-import { MessageSquare, Phone } from 'lucide-react-native';
+import React, { useState, useEffect } from 'react';
+import {
+    View,
+    Text,
+    TouchableOpacity,
+    FlatList,
+    Image,
+    ActivityIndicator,
+    Alert,
+    StyleSheet
+} from 'react-native';
+import { ArrowLeft, MessageSquare, Phone, Package, Calendar } from 'lucide-react-native';
+import useGet from '../hooks/useGet';
 
-const ordersData = [
-    {
-        id: '27890765356',
-        date: '10 Apr 2023 at 07:45 PM',
-        address: '4517 Washington Ave...',
-        itemsCount: 10,
-        amount: '$22',
-        status: 'Received',
-        type: 'Previous',
-        image: require('../assets/cat1.png'),
-    },
-    {
-        id: '89012399098',
-        date: '10 Apr 2023 at 07:45 PM',
-        address: '4517 Washington Ave...',
-        itemsCount: 15,
-        amount: '$50',
-        status: 'Received',
-        type: 'Previous',
-        image: require('../assets/cat1.png'),
-    },
-    {
-        id: '33098890165',
-        date: '10 Apr 2023 at 07:45 PM',
-        address: '4517 Washington Ave...',
-        itemsCount: 5,
-        amount: '$45',
-        status: 'Processing',
-        type: 'Previous',
-        image: require('../assets/cat1.png'),
-    },
-    {
-        id: '44098890166',
-        date: '11 Apr 2023 at 09:30 AM',
-        address: '1234 Main Street...',
-        itemsCount: 8,
-        amount: '$35',
-        status: 'Confirmed',
-        type: 'Previous',
-        image: require('../assets/cat1.png'),
-    },
-];
+export default function OrderScreen({ navigation }) {
+    const [selectedTab, setSelectedTab] = useState('All');
 
-export default function OrderScreen() {
-    const [selectedTab, setSelectedTab] = useState('Upcoming');
+    // Fetch all orders
+    const { data: orders, loading, error, refetch } = useGet('/orders/my/orders');
 
-    // Filter orders based on selected tab
-    const filteredOrders = ordersData.filter(order => order.type === selectedTab);
+    const handleBack = () => {
+        navigation?.goBack();
+    };
+
+    const handleOrderPress = (orderId) => {
+        // Navigate to order details screen
+        navigation.navigate('OrderDetails', { orderId });
+    };
+
+    // Filter orders based on selected tab and status
+    const filteredOrders = orders ? orders.filter(order => {
+        if (selectedTab === 'All') return true;
+        if (selectedTab === 'Pending') return order.status === 'pending';
+        if (selectedTab === 'Processing') return order.status === 'processing';
+        if (selectedTab === 'Completed') return order.status === 'completed';
+        return true;
+    }) : [];
+
+    const formatDate = (dateString) => {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    };
+
+    const getStatusColor = (status) => {
+        switch (status) {
+            case 'pending': return '#f59e0b';
+            case 'processing': return '#3b82f6';
+            case 'completed': return '#10b981';
+            default: return '#6b7280';
+        }
+    };
+
+    const getStatusText = (status) => {
+        return status.charAt(0).toUpperCase() + status.slice(1);
+    };
+
+    const calculateTotalItems = (items) => {
+        return items.reduce((total, item) => total + item.quantity, 0);
+    };
+
+    const renderOrderItem = ({ item }) => (
+        <TouchableOpacity
+            style={styles.orderCard}
+            onPress={() => handleOrderPress(item._id)}
+            activeOpacity={0.7}
+        >
+            <View style={styles.orderHeader}>
+                <View style={styles.orderIconContainer}>
+                    <Package size={24} color="#6b7280" />
+                </View>
+                <View style={styles.orderInfo}>
+                    <Text style={styles.orderId}>#{item._id.slice(-8).toUpperCase()}</Text>
+                    <View style={styles.orderMeta}>
+                        <Calendar size={14} color="#6b7280" />
+                        <Text style={styles.date}>{formatDate(item.createdAt)}</Text>
+                    </View>
+                    <Text style={styles.itemCount}>
+                        {calculateTotalItems(item.items)} items • {item.paymentMethod.toUpperCase()}
+                    </Text>
+                </View>
+                <View style={[styles.statusTag, { backgroundColor: getStatusColor(item.status) + '20' }]}>
+                    <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>
+                        {getStatusText(item.status)}
+                    </Text>
+                </View>
+            </View>
+
+            <View style={styles.orderDetails}>
+                <Text style={styles.itemsPreview}>
+                    {item.items.slice(0, 2).map((orderItem, index) =>
+                        `${orderItem.product?.name || 'Product'} (${orderItem.quantity}x)`
+                    ).join(', ')}
+                    {item.items.length > 2 && ` +${item.items.length - 2} more`}
+                </Text>
+            </View>
+
+            <View style={styles.footerRow}>
+                <View style={styles.priceBreakdown}>
+                    <Text style={styles.subtotal}>Subtotal: Rs {item.subtotal}</Text>
+                    {item.charges.total > 0 && (
+                        <Text style={styles.charges}>Charges: Rs {item.charges.total}</Text>
+                    )}
+                </View>
+                <Text style={styles.totalAmount}>Rs {item.total}</Text>
+            </View>
+
+            {(item.status === 'processing' || item.status === 'completed') && (
+                <View style={styles.actionRow}>
+                    <TouchableOpacity style={styles.actionBtn} activeOpacity={0.7}>
+                        <MessageSquare size={16} color="#22c55e" />
+                        <Text style={styles.actionText}>Message</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.actionBtn} activeOpacity={0.7}>
+                        <Phone size={16} color="#22c55e" />
+                        <Text style={styles.actionText}>Call</Text>
+                    </TouchableOpacity>
+                </View>
+            )}
+        </TouchableOpacity>
+    );
+
+    if (loading) {
+        return (
+            <View style={styles.container}>
+                <View style={styles.header}>
+                    <TouchableOpacity style={styles.backBtn} onPress={handleBack} activeOpacity={0.7}>
+                        <ArrowLeft size={20} color="#1f2937" />
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>My Orders</Text>
+                    <View style={styles.headerSpacer} />
+                </View>
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color="#22c55e" />
+                    <Text style={styles.loadingText}>Loading orders...</Text>
+                </View>
+            </View>
+        );
+    }
+
+    if (error) {
+        return (
+            <View style={styles.container}>
+                <View style={styles.header}>
+                    <TouchableOpacity style={styles.backBtn} onPress={handleBack} activeOpacity={0.7}>
+                        <ArrowLeft size={20} color="#1f2937" />
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>My Orders</Text>
+                    <View style={styles.headerSpacer} />
+                </View>
+                <View style={styles.errorContainer}>
+                    <Text style={styles.errorText}>{error}</Text>
+                    <TouchableOpacity style={styles.retryBtn} onPress={refetch} activeOpacity={0.7}>
+                        <Text style={styles.retryText}>Retry</Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+        );
+    }
 
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>My Order</Text>
+            <View style={styles.header}>
+                <TouchableOpacity style={styles.backBtn} onPress={handleBack} activeOpacity={0.7}>
+                    <ArrowLeft size={20} color="#1f2937" />
+                </TouchableOpacity>
+                <Text style={styles.headerTitle}>My Orders</Text>
+                <View style={styles.headerSpacer} />
+            </View>
 
             {/* Tabs */}
-            <View style={styles.tabs}>
-                <TouchableOpacity
-                    style={[styles.tabBtn, styles.tabLeft, selectedTab === 'Previous' && styles.tabActive]}
-                    onPress={() => setSelectedTab('Previous')}
-                    activeOpacity={0.7}
-                >
-                    <Text style={[styles.tabText, selectedTab === 'Previous' && styles.tabTextActive]}>
-                        Previous
-                    </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                    style={[styles.tabBtn, styles.tabRight, selectedTab === 'Upcoming' && styles.tabActive]}
-                    onPress={() => setSelectedTab('Upcoming')}
-                    activeOpacity={0.7}
-                >
-                    <Text style={[styles.tabText, selectedTab === 'Upcoming' && styles.tabTextActive]}>
-                        Upcoming
-                    </Text>
-                </TouchableOpacity>
+            <View style={styles.tabsContainer}>
+                <View style={styles.tabs}>
+                    {['All', 'Pending', 'Processing', 'Completed'].map((tab) => (
+                        <TouchableOpacity
+                            key={tab}
+                            style={[
+                                styles.tabBtn,
+                                selectedTab === tab && styles.tabActive
+                            ]}
+                            onPress={() => setSelectedTab(tab)}
+                            activeOpacity={0.7}
+                        >
+                            <Text style={[
+                                styles.tabText,
+                                selectedTab === tab && styles.tabTextActive
+                            ]}>
+                                {tab}
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
             </View>
 
             {/* Orders List */}
             <FlatList
                 data={filteredOrders}
-                keyExtractor={(item) => item.id}
-                showsVerticalScrollIndicator={true}
+                keyExtractor={(item) => item._id}
+                showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.listContainer}
                 style={styles.listStyle}
-                renderItem={({ item }) => (
-                    <View style={styles.orderCard}>
-                        <View style={styles.orderHeader}>
-                            <Image source={item.image} style={styles.image} />
-                            <View style={styles.orderInfo}>
-                                <Text style={styles.orderId}>#{item.id}</Text>
-                                <Text style={styles.address}>{item.address}</Text>
-                                <Text style={styles.itemCount}>{item.itemsCount} items</Text>
-                            </View>
-                            <View style={styles.statusTag}>
-                                <Text style={styles.statusText}>{item.status}</Text>
-                            </View>
-                        </View>
-
-                        <Text style={styles.date}>{item.date}</Text>
-
-                        <View style={styles.footerRow}>
-                            <TouchableOpacity style={styles.iconBtn} activeOpacity={0.7}>
-                                <MessageSquare size={20} color="#22c55e" />
-                                <Text style={styles.iconText}>Message</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.iconBtn} activeOpacity={0.7}>
-                                <Phone size={20} color="#22c55e" />
-                                <Text style={styles.iconText}>Call</Text>
-                            </TouchableOpacity>
-                            <Text style={styles.amount}>{item.amount}</Text>
-                        </View>
-                    </View>
-                )}
+                renderItem={renderOrderItem}
                 ListEmptyComponent={() => (
                     <View style={styles.emptyContainer}>
-                        <Text style={styles.emptyText}>No {selectedTab.toLowerCase()} orders found</Text>
+                        <Package size={48} color="#9ca3af" />
+                        <Text style={styles.emptyTitle}>No {selectedTab.toLowerCase()} orders</Text>
+                        <Text style={styles.emptySubtitle}>
+                            {selectedTab === 'All'
+                                ? "You haven't placed any orders yet"
+                                : `No ${selectedTab.toLowerCase()} orders found`
+                            }
+                        </Text>
                     </View>
                 )}
+                refreshing={loading}
+                onRefresh={refetch}
             />
         </View>
     );
@@ -126,135 +227,222 @@ export default function OrderScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        padding: 16,
-        backgroundColor: '#fff'
+        backgroundColor: '#f9fafb',
     },
-    title: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        marginBottom: 10,
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingVertical: 40,
+        backgroundColor: '#fff',
+        borderBottomWidth: 1,
+        borderBottomColor: '#e5e7eb',
+    },
+    backBtn: {
+        padding: 8,
+        borderRadius: 8,
+    },
+    headerTitle: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: '#1f2937',
+        marginLeft: 12,
+    },
+    headerSpacer: {
+        flex: 1,
+    },
+    tabsContainer: {
+        backgroundColor: '#fff',
+        borderBottomWidth: 1,
+        borderBottomColor: '#e5e7eb',
     },
     tabs: {
         flexDirection: 'row',
-        marginBottom: 16,
-        backgroundColor: '#f5f5f5',
-        borderRadius: 8,
-        padding: 2,
+        paddingHorizontal: 16,
+        paddingVertical: 8,
     },
     tabBtn: {
-        flex: 1,
-        paddingVertical: 10,
-        alignItems: 'center',
-        borderRadius: 6,
-    },
-    tabLeft: {
-        marginRight: 1,
-    },
-    tabRight: {
-        marginLeft: 1,
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        marginRight: 8,
+        borderRadius: 20,
+        backgroundColor: '#f3f4f6',
     },
     tabActive: {
         backgroundColor: '#22c55e',
     },
     tabText: {
-        color: '#666',
-        fontWeight: '600',
+        fontSize: 14,
+        fontWeight: '500',
+        color: '#6b7280',
     },
     tabTextActive: {
         color: '#fff',
     },
+    listContainer: {
+        padding: 16,
+    },
     listStyle: {
         flex: 1,
     },
-    listContainer: {
-        paddingBottom: 30,
-        flexGrow: 1,
-    },
     orderCard: {
-        backgroundColor: '#f9f9f9',
-        padding: 12,
-        borderRadius: 10,
-        marginBottom: 16,
-        elevation: 2,
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        padding: 16,
+        marginBottom: 12,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+        elevation: 2,
     },
     orderHeader: {
         flexDirection: 'row',
-        alignItems: 'center',
+        alignItems: 'flex-start',
+        marginBottom: 12,
     },
-    image: {
-        width: 50,
-        height: 50,
-        borderRadius: 6,
+    orderIconContainer: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: '#f3f4f6',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 12,
     },
     orderInfo: {
-        marginLeft: 10,
         flex: 1,
     },
     orderId: {
-        fontWeight: 'bold',
         fontSize: 16,
-    },
-    address: {
-        color: '#777',
-        fontSize: 13,
-    },
-    itemCount: {
-        color: '#777',
-        fontSize: 13,
-    },
-    statusTag: {
-        backgroundColor: '#e7fce9',
-        paddingHorizontal: 8,
-        paddingVertical: 2,
-        borderRadius: 10,
-    },
-    statusText: {
-        color: '#22c55e',
-        fontSize: 12,
         fontWeight: '600',
+        color: '#1f2937',
+        marginBottom: 4,
+    },
+    orderMeta: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 4,
     },
     date: {
-        marginTop: 6,
-        color: '#888',
-        fontSize: 13,
+        fontSize: 12,
+        color: '#6b7280',
+        marginLeft: 4,
+    },
+    itemCount: {
+        fontSize: 12,
+        color: '#6b7280',
+    },
+    statusTag: {
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 6,
+        alignSelf: 'flex-start',
+    },
+    statusText: {
+        fontSize: 12,
+        fontWeight: '500',
+    },
+    orderDetails: {
+        marginBottom: 12,
+    },
+    itemsPreview: {
+        fontSize: 14,
+        color: '#4b5563',
+        lineHeight: 20,
     },
     footerRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'center',
-        marginTop: 12,
+        alignItems: 'flex-end',
+        marginBottom: 8,
     },
-    iconBtn: {
+    priceBreakdown: {
+        flex: 1,
+    },
+    subtotal: {
+        fontSize: 12,
+        color: '#6b7280',
+        marginBottom: 2,
+    },
+    charges: {
+        fontSize: 12,
+        color: '#6b7280',
+    },
+    totalAmount: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: '#1f2937',
+    },
+    actionRow: {
+        flexDirection: 'row',
+        justifyContent: 'flex-start',
+        borderTopWidth: 1,
+        borderTopColor: '#f3f4f6',
+        paddingTop: 12,
+        marginTop: 4,
+    },
+    actionBtn: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#e7fce9',
-        paddingVertical: 6,
         paddingHorizontal: 12,
-        borderRadius: 6,
+        paddingVertical: 6,
+        marginRight: 12,
     },
-    iconText: {
-        marginLeft: 6,
+    actionText: {
+        fontSize: 12,
         color: '#22c55e',
-        fontWeight: '600',
+        fontWeight: '500',
+        marginLeft: 4,
     },
-    amount: {
-        fontWeight: 'bold',
-        fontSize: 16,
-        color: '#333',
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    loadingText: {
+        fontSize: 14,
+        color: '#6b7280',
+        marginTop: 8,
+    },
+    errorContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 32,
+    },
+    errorText: {
+        fontSize: 14,
+        color: '#ef4444',
+        textAlign: 'center',
+        marginBottom: 16,
+    },
+    retryBtn: {
+        backgroundColor: '#22c55e',
+        paddingHorizontal: 24,
+        paddingVertical: 12,
+        borderRadius: 8,
+    },
+    retryText: {
+        color: '#fff',
+        fontWeight: '500',
     },
     emptyContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        paddingVertical: 50,
+        paddingVertical: 48,
     },
-    emptyText: {
-        fontSize: 16,
-        color: '#666',
+    emptyTitle: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: '#1f2937',
+        marginTop: 16,
+        marginBottom: 8,
+    },
+    emptySubtitle: {
+        fontSize: 14,
+        color: '#6b7280',
         textAlign: 'center',
     },
 });
