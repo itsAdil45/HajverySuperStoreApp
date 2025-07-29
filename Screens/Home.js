@@ -14,7 +14,8 @@ import { Ionicons, Feather } from '@expo/vector-icons'; // or react-native-vecto
 import useGet from '../hooks/useGet';
 import { useEffect, useState } from 'react';
 import { useContext } from 'react';
-import { UserContext } from '../contexts/UserContext'; // adjust path
+// import { UserContext } from '../contexts/UserContext'; // adjust path
+import { useAuth } from '../contexts/AuthContext';
 const bestDeals = [
     {
         id: '1',
@@ -38,7 +39,9 @@ const Home = ({ navigation }) => {
     const { data, loading, error, refetch } = useGet('/categories/all_main');
     const [categories, setCategories] = useState([]);
     const [keyword, setKeyword] = useState('');
-    const { LoggedInUser } = useContext(UserContext);
+    // const { LoggedInUser } = useContext(UserContext);\
+    const { user } = useAuth();
+
     useEffect(() => {
         if (data && data.categories) {
             setCategories(data.categories);
@@ -71,7 +74,7 @@ const Home = ({ navigation }) => {
             <View style={styles.header}>
                 <View>
                     <Text style={styles.locationTitle}>Home</Text>
-                    <Text style={styles.locationText}>{LoggedInUser?.address.split("+")[0].trim()}</Text>
+                    <Text style={styles.locationText}>{user?.address.split("+")[0].trim()}</Text>
                 </View>
                 <TouchableOpacity onPress={() => navigation.navigate("CartTab")}>
                     <Feather name="shopping-cart" size={22} color="#000" />

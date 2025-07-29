@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Dimensions, ScrollView, Alert } from 'react-native';
-import { Pencil, User, ArrowLeft, Check, Mail, Phone, MapPin, Camera } from 'lucide-react-native';
+import { Feather, Ionicons } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
 
@@ -36,7 +36,7 @@ export default function EditProfileScreen({ navigation }) {
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity style={styles.backBtn} onPress={handleBack} activeOpacity={0.7}>
-                    <ArrowLeft size={20} color="#1f2937" />
+                    <Ionicons name='arrow-back' size={20} color="#1f2937" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Edit Profile</Text>
                 <View style={styles.headerSpacer} />
@@ -46,10 +46,11 @@ export default function EditProfileScreen({ navigation }) {
             <View style={styles.profileSection}>
                 <View style={styles.avatarContainer}>
                     <View style={styles.avatarPlaceholder}>
-                        <User size={40} color="#22c55e" />
+                        <Feather name='users' size={40} color="#22c55e" />
+
                     </View>
                     <TouchableOpacity style={styles.cameraIcon} activeOpacity={0.7}>
-                        <Camera size={16} color="#fff" />
+                        <Feather name='camera' size={16} color="#fff" />
                     </TouchableOpacity>
                 </View>
                 <Text style={styles.changePhotoText}>Change Profile Photo</Text>
@@ -64,14 +65,14 @@ export default function EditProfileScreen({ navigation }) {
                         label="Full Name"
                         value={form.name}
                         onChangeText={(v) => handleChange('name', v)}
-                        icon={<User size={20} color="#6b7280" />}
+                        icon={<Feather name='user' size={20} color="#6b7280" />}
                         placeholder="Enter your full name"
                     />
                     <Field
                         label="Email Address"
                         value={form.email}
                         onChangeText={(v) => handleChange('email', v)}
-                        icon={<Mail size={20} color="#6b7280" />}
+                        icon={<Feather name='mail' size={20} color="#6b7280" />}
                         placeholder="Enter your email"
                         keyboardType="email-address"
                     />
@@ -79,7 +80,7 @@ export default function EditProfileScreen({ navigation }) {
                         label="Mobile Number"
                         value={form.phone}
                         onChangeText={(v) => handleChange('phone', v)}
-                        icon={<Phone size={20} color="#6b7280" />}
+                        icon={<Feather name='phone' size={20} color="#6b7280" />}
                         placeholder="Enter your phone number"
                         keyboardType="phone-pad"
                     />
@@ -87,7 +88,7 @@ export default function EditProfileScreen({ navigation }) {
                         label="Address"
                         value={form.address}
                         onChangeText={(v) => handleChange('address', v)}
-                        icon={<MapPin size={20} color="#6b7280" />}
+                        icon={<Ionicons name='location' size={20} color="#6b7280" />}
                         placeholder="Enter your address"
                         multiline={true}
                         numberOfLines={3}
@@ -106,7 +107,7 @@ export default function EditProfileScreen({ navigation }) {
                     <Text style={styles.updateText}>Updating...</Text>
                 ) : (
                     <>
-                        <Check size={18} color="white" />
+                        <Feather name='check' size={18} color="white" />
                         <Text style={styles.updateText}>Update Profile</Text>
                     </>
                 )}

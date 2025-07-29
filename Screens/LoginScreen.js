@@ -10,7 +10,8 @@ import {
     ActivityIndicator,
     Alert,
 } from 'react-native';
-import { Eye, EyeOff } from 'lucide-react-native';
+import { Feather } from '@expo/vector-icons';
+
 import { useAuth } from '../contexts/AuthContext';
 
 const LoginScreen = ({ navigation }) => {
@@ -40,6 +41,7 @@ const LoginScreen = ({ navigation }) => {
     };
 
     return (
+
         <SafeAreaView style={styles.container}>
             <Image source={require('../assets/login.png')} style={styles.logo} />
             <Text style={styles.title}>Login</Text>
@@ -63,7 +65,7 @@ const LoginScreen = ({ navigation }) => {
                     onChangeText={setPassword}
                 />
                 <TouchableOpacity onPress={() => setHidePassword(!hidePassword)}>
-                    {hidePassword ? <EyeOff size={20} color="#777" /> : <Eye size={20} color="#777" />}
+                    {hidePassword ? <Feather name='eye-off' size={20} color="#777" /> : <Feather name='eye' size={20} color="#777" />}
                 </TouchableOpacity>
             </View>
 
@@ -71,7 +73,7 @@ const LoginScreen = ({ navigation }) => {
                 <Text style={styles.forgotText}>Forgot Password?</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.loginButton} onPress={handleLogin} disabled={loading}>
+            <TouchableOpacity style={styles.loginButton} onPress={handleLogin} disabled={loading}  >
                 {loading ? (
                     <ActivityIndicator color="#fff" />
                 ) : (

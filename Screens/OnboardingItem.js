@@ -6,7 +6,6 @@ import Animated, {
     withTiming,
     withDelay,
     withSpring,
-    runOnJS,
 } from 'react-native-reanimated';
 
 const { width, height } = Dimensions.get('window');
@@ -20,13 +19,6 @@ const OnboardingItem = ({ image, title, description, onNext, onSkip, showSkip })
 
     const buttonScale = useSharedValue(0.95);
     const buttonOpacity = useSharedValue(0);
-
-    const animateButton = () => {
-        buttonScale.value = withSpring(0.95, { damping: 10 });
-        setTimeout(() => {
-            buttonScale.value = withSpring(1, { damping: 10 });
-        }, 100);
-    };
 
     useEffect(() => {
         // Image entrance animation
@@ -58,10 +50,21 @@ const OnboardingItem = ({ image, title, description, onNext, onSkip, showSkip })
     }));
 
     const handleButtonPress = () => {
-        runOnJS(animateButton)();
+        // Animate button press
+        buttonScale.value = withSpring(0.95, { damping: 10 }, (finished) => {
+            if (finished) {
+                buttonScale.value = withSpring(1, { damping: 10 });
+            }
+        });
+
+        // Navigate after a short delay
         setTimeout(() => {
             onNext && onNext();
         }, 150);
+    };
+
+    const handleSkipPress = () => {
+        onSkip && onSkip();
     };
 
     return (
@@ -72,7 +75,7 @@ const OnboardingItem = ({ image, title, description, onNext, onSkip, showSkip })
 
             {/* Skip button */}
             {showSkip && (
-                <TouchableOpacity onPress={onSkip} style={styles.skip}>
+                <TouchableOpacity onPress={handleSkipPress} style={styles.skip}>
                     <Text style={styles.skipText}>Skip</Text>
                 </TouchableOpacity>
             )}

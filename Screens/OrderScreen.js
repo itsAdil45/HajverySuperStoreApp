@@ -9,7 +9,8 @@ import {
     Alert,
     StyleSheet
 } from 'react-native';
-import { ArrowLeft, MessageSquare, Phone, Package, Calendar } from 'lucide-react-native';
+import { Feather, Ionicons } from '@expo/vector-icons';
+
 import useGet from '../hooks/useGet';
 
 export default function OrderScreen({ navigation }) {
@@ -72,12 +73,13 @@ export default function OrderScreen({ navigation }) {
         >
             <View style={styles.orderHeader}>
                 <View style={styles.orderIconContainer}>
-                    <Package size={24} color="#6b7280" />
+                    <Feather name='package' size={24} color="#6b7280" />
+
                 </View>
                 <View style={styles.orderInfo}>
                     <Text style={styles.orderId}>#{item._id.slice(-8).toUpperCase()}</Text>
                     <View style={styles.orderMeta}>
-                        <Calendar size={14} color="#6b7280" />
+                        <Ionicons name='calendar-sharp' size={14} color="#6b7280" />
                         <Text style={styles.date}>{formatDate(item.createdAt)}</Text>
                     </View>
                     <Text style={styles.itemCount}>
@@ -113,11 +115,11 @@ export default function OrderScreen({ navigation }) {
             {(item.status === 'processing' || item.status === 'completed') && (
                 <View style={styles.actionRow}>
                     <TouchableOpacity style={styles.actionBtn} activeOpacity={0.7}>
-                        <MessageSquare size={16} color="#22c55e" />
+                        <Feather name='message-square' size={16} color="#22c55e" />
                         <Text style={styles.actionText}>Message</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.actionBtn} activeOpacity={0.7}>
-                        <Phone size={16} color="#22c55e" />
+                        <Feather name='phone' size={16} color="#22c55e" />
                         <Text style={styles.actionText}>Call</Text>
                     </TouchableOpacity>
                 </View>
@@ -130,7 +132,7 @@ export default function OrderScreen({ navigation }) {
             <View style={styles.container}>
                 <View style={styles.header}>
                     <TouchableOpacity style={styles.backBtn} onPress={handleBack} activeOpacity={0.7}>
-                        <ArrowLeft size={20} color="#1f2937" />
+                        <Feather name='arrow-left' size={20} color="#1f2937" />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>My Orders</Text>
                     <View style={styles.headerSpacer} />
@@ -148,7 +150,7 @@ export default function OrderScreen({ navigation }) {
             <View style={styles.container}>
                 <View style={styles.header}>
                     <TouchableOpacity style={styles.backBtn} onPress={handleBack} activeOpacity={0.7}>
-                        <ArrowLeft size={20} color="#1f2937" />
+                        <Feather name='arrow-left' size={20} color="#1f2937" />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>My Orders</Text>
                     <View style={styles.headerSpacer} />
@@ -167,7 +169,7 @@ export default function OrderScreen({ navigation }) {
         <View style={styles.container}>
             <View style={styles.header}>
                 <TouchableOpacity style={styles.backBtn} onPress={handleBack} activeOpacity={0.7}>
-                    <ArrowLeft size={20} color="#1f2937" />
+                    <Feather name='arrow-left' size={20} color="#1f2937" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>My Orders</Text>
                 <View style={styles.headerSpacer} />
@@ -207,7 +209,7 @@ export default function OrderScreen({ navigation }) {
                 renderItem={renderOrderItem}
                 ListEmptyComponent={() => (
                     <View style={styles.emptyContainer}>
-                        <Package size={48} color="#9ca3af" />
+                        <Feather name='package' size={48} color="#9ca3af" />
                         <Text style={styles.emptyTitle}>No {selectedTab.toLowerCase()} orders</Text>
                         <Text style={styles.emptySubtitle}>
                             {selectedTab === 'All'

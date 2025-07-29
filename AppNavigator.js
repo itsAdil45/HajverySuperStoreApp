@@ -4,7 +4,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { TouchableOpacity } from 'react-native';
-import { Home, ShoppingCart, Percent, LayoutGrid, Menu } from 'lucide-react-native';
+import { Feather } from '@expo/vector-icons';
 import CustomDrawerContent from './Components/CustomDrawerContent';
 // Auth Screens
 import SplashScreen from './Screens/SplashScreen';
@@ -79,7 +79,7 @@ const MainTabNavigator = ({ navigation }) => {
                         onPress={() => navigation.openDrawer()}
                         style={{ marginLeft: 15 }}
                     >
-                        <Menu size={24} color="black" />
+                        <Feather name="menu" size={25} color="black" />
                     </TouchableOpacity>
                 ),
                 tabBarStyle: {
@@ -97,7 +97,8 @@ const MainTabNavigator = ({ navigation }) => {
                 component={HomeScreen}
                 options={{
                     tabBarLabel: 'Home',
-                    tabBarIcon: ({ color, size }) => <Home color={color} size={size} />,
+                    tabBarIcon: ({ color, size }) => <Feather name="home" size={size} color={color} />
+                    ,
                 }}
             />
             <Tab.Screen
@@ -105,15 +106,16 @@ const MainTabNavigator = ({ navigation }) => {
                 component={CheckoutScreen}
                 options={{
                     tabBarLabel: 'Cart',
-                    tabBarIcon: ({ color, size }) => <ShoppingCart color={color} size={size} />,
+                    tabBarIcon: ({ color, size }) => <Feather name="shopping-cart" size={size} color={color} />
                 }}
             />
+
             <Tab.Screen
                 name="DealsTab"
                 component={BestDealScreen}
                 options={{
                     tabBarLabel: 'Deals',
-                    tabBarIcon: ({ color, size }) => <Percent color={color} size={size} />,
+                    tabBarIcon: ({ color, size }) => <Feather name="package" size={size} color={color} />
                 }}
             />
             <Tab.Screen
@@ -121,7 +123,7 @@ const MainTabNavigator = ({ navigation }) => {
                 component={MainCategoriesScreen}
                 options={{
                     tabBarLabel: 'Category',
-                    tabBarIcon: ({ color, size }) => <LayoutGrid color={color} size={size} />,
+                    tabBarIcon: ({ color, size }) => <Feather name="grid" size={size} color={color} />
                 }}
             />
         </Tab.Navigator>

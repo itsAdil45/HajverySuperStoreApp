@@ -15,7 +15,9 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useContext } from 'react';
-import { UserContext } from '../contexts/UserContext'; // adjust path
+// import { UserContext } from '../contexts/UserContext'; // adjust path
+import { useAuth } from '../contexts/AuthContext';
+
 const { width } = Dimensions.get('window');
 import usePut from '../hooks/usePut'; // Add this import
 
@@ -63,7 +65,9 @@ import useGet from '../hooks/useGet';
 
 export default function PaymentScreen({ navigation, route }) {
     const { total } = route.params || {};
-    const { LoggedInUser, setLoggedInUser } = useContext(UserContext);
+    // const { user, setUser } = useContext(UserContext);
+    const { user, setUser } = useAuth();
+
     const [selectedMethod, setSelectedMethod] = useState(null);
     const [receiptImage, setReceiptImage] = useState(null);
     const [selectedAddress, setSelectedAddress] = useState(null);
@@ -109,13 +113,13 @@ export default function PaymentScreen({ navigation, route }) {
 
     // Function to update user profile
     const updateUserProfile = async (updates) => {
-        if (!LoggedInUser) return false;
+        if (!user) return false;
 
         try {
             const profileData = {
-                name: LoggedInUser.name,
-                address: updates.address || LoggedInUser.address,
-                phone: updates.phone || LoggedInUser.phone,
+                name: user.name,
+                address: updates.address || user.address,
+                phone: updates.phone || user.phone,
                 ...updates
             };
 
@@ -124,8 +128,8 @@ export default function PaymentScreen({ navigation, route }) {
             const result = await updateProfile('/api/user/update-profile', profileData, true);
 
             if (result) {
-                const updatedUser = { ...LoggedInUser, ...updates };
-                setLoggedInUser(updatedUser);
+                const updatedUser = { ...user, ...updates };
+                setUser(updatedUser);
                 console.log('Profile updated successfully');
                 return true;
             } else {
@@ -142,22 +146,22 @@ export default function PaymentScreen({ navigation, route }) {
 
     // Initialize user data from context
     useEffect(() => {
-        if (LoggedInUser) {
-            if (LoggedInUser.address && !selectedAddress) {
-                setSelectedAddress(LoggedInUser.address.split("+")[0].trim());
+        if (user) {
+            if (user.address && !selectedAddress) {
+                setSelectedAddress(user.address.split("+")[0].trim());
             }
-            if (LoggedInUser.phone) {
-                setSelectedPhone(LoggedInUser.phone);
+            if (user.phone) {
+                setSelectedPhone(user.phone);
             }
         }
-    }, [LoggedInUser]);
+    }, [user]);
 
     // Handle address selection from route params and update profile
     useEffect(() => {
         const handleNewAddress = async () => {
             const { selectedAddress: routeAddress } = route.params || {};
 
-            if (routeAddress && LoggedInUser) {
+            if (routeAddress && user) {
                 const displayAddress = routeAddress.split("+")[0].trim();
                 setSelectedAddress(displayAddress);
 
@@ -166,7 +170,7 @@ export default function PaymentScreen({ navigation, route }) {
                 if (success) {
                     navigation.setParams({ selectedAddress: undefined });
                 } else {
-                    setSelectedAddress(LoggedInUser.address ? LoggedInUser.address.split("+")[0].trim() : null);
+                    setSelectedAddress(user.address ? user.address.split("+")[0].trim() : null);
                 }
             }
         };
@@ -174,7 +178,7 @@ export default function PaymentScreen({ navigation, route }) {
         if (route.params?.selectedAddress) {
             handleNewAddress();
         }
-    }, [route.params, navigation, LoggedInUser]);
+    }, [route.params, navigation, user]);
 
     const handleAddressSelection = () => {
         navigation.replace('LocationPickerScreen', {
@@ -224,7 +228,7 @@ export default function PaymentScreen({ navigation, route }) {
             return Alert.alert("Upload Receipt", "Receipt is required for online payment.");
         }
 
-        if (!LoggedInUser?.address) {
+        if (!user?.address) {
             return Alert.alert("Select Address", "Please select a delivery address.");
         }
 
@@ -309,7 +313,7 @@ export default function PaymentScreen({ navigation, route }) {
                 </View>
 
                 <View style={styles.modalContent}>
-                    {LoggedInUser?.address && (
+                    {user?.address && (
                         <TouchableOpacity
                             style={styles.addressItem}
                             onPress={() => setModalVisible(false)}
@@ -317,7 +321,7 @@ export default function PaymentScreen({ navigation, route }) {
                             <Ionicons name="location-outline" size={20} color="#53B175" />
                             <View style={styles.addressTextContainer}>
                                 <Text style={styles.addressTitle}>Current Address</Text>
-                                <Text style={styles.addressText}>{getDisplayAddress(LoggedInUser.address)}</Text>
+                                <Text style={styles.addressText}>{getDisplayAddress(user.address)}</Text>
                             </View>
                             <Ionicons name="checkmark-circle" size={20} color="#53B175" />
                         </TouchableOpacity>
@@ -361,7 +365,7 @@ export default function PaymentScreen({ navigation, route }) {
                                 <View style={styles.infoTextContainer}>
                                     <Text style={styles.infoLabel}>Delivering to</Text>
                                     <Text style={styles.infoValue}>
-                                        {getDisplayAddress(LoggedInUser?.address)}
+                                        {getDisplayAddress(user?.address)}
                                     </Text>
                                 </View>
                             </View>

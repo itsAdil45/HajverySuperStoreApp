@@ -18,7 +18,7 @@ import usePatch from '../hooks/usePatch';
 import useDelete from '../hooks/useDelete';
 import axios from 'axios';
 
-const baseUrl = 'http://192.168.49.215:5000/api';
+const baseUrl = 'https://hajverystorebackend.onrender.com/api';
 
 export default function CheckoutScreen() {
     const navigation = useNavigation();
