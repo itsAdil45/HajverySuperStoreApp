@@ -150,6 +150,7 @@ const ProductScreen = ({ route, navigation }) => {
         }
 
         const cartData = {
+            itemType: "product",
             productId: product._id || product.id || productId,
             quantity: quantity,
             variantName: getCurrentVariantName()

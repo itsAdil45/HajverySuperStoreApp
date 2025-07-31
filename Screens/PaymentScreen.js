@@ -14,8 +14,6 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { useContext } from 'react';
-// import { UserContext } from '../contexts/UserContext'; // adjust path
 import { useAuth } from '../contexts/AuthContext';
 
 const { width } = Dimensions.get('window');
@@ -65,7 +63,6 @@ import useGet from '../hooks/useGet';
 
 export default function PaymentScreen({ navigation, route }) {
     const { total } = route.params || {};
-    // const { user, setUser } = useContext(UserContext);
     const { user, setUser } = useAuth();
 
     const [selectedMethod, setSelectedMethod] = useState(null);
@@ -77,7 +74,6 @@ export default function PaymentScreen({ navigation, route }) {
     const [tempPhone, setTempPhone] = useState('');
     const [loading, setLoading] = useState(false);
 
-    // Add charges state
     const [charges, setCharges] = useState({
         delivery: 50,  // Default delivery charge
         vat: 0,        // Will calculate based on total
@@ -86,20 +82,17 @@ export default function PaymentScreen({ navigation, route }) {
 
     const { put: updateProfile, loading: updateLoading, error: updateError } = usePut();
     const { postFormData, loading: checkoutLoading, error: checkoutError } = usePostFormData();
-    const { refetch: refetchCart } = useGet('/cart'); // To refresh cart after checkout
-
-    // Calculate VAT (assuming 5% VAT)
+    const { refetch: refetchCart } = useGet('/cart');
     useEffect(() => {
         if (total) {
-            const vatAmount = parseFloat(total) * 0.05; // 5% VAT
+            const vatAmount = parseFloat(total) * 0.05;
             setCharges(prev => ({
                 ...prev,
-                vat: Math.round(vatAmount * 100) / 100 // Round to 2 decimal places
+                vat: Math.round(vatAmount * 100) / 100
             }));
         }
     }, [total]);
 
-    // Calculate final total including charges
     const finalTotal = useMemo(() => {
         const subtotal = parseFloat(total) || 0;
         const totalCharges = charges.delivery + charges.vat + charges.other;
@@ -111,7 +104,6 @@ export default function PaymentScreen({ navigation, route }) {
         return fullAddress.split("+")[0].trim();
     };
 
-    // Function to update user profile
     const updateUserProfile = async (updates) => {
         if (!user) return false;
 
@@ -144,7 +136,6 @@ export default function PaymentScreen({ navigation, route }) {
         }
     };
 
-    // Initialize user data from context
     useEffect(() => {
         if (user) {
             if (user.address && !selectedAddress) {
@@ -156,7 +147,6 @@ export default function PaymentScreen({ navigation, route }) {
         }
     }, [user]);
 
-    // Handle address selection from route params and update profile
     useEffect(() => {
         const handleNewAddress = async () => {
             const { selectedAddress: routeAddress } = route.params || {};
@@ -239,28 +229,22 @@ export default function PaymentScreen({ navigation, route }) {
         setLoading(true);
 
         try {
-            // Prepare checkout data
             const checkoutData = {
                 paymentMethod: selectedMethod,
-                charges: {
-                    delivery: charges.delivery,
-                    vat: charges.vat,
-                    other: charges.other
-                }
+                'charges[delivery]': charges.delivery,
+                'charges[vat]': charges.vat,
+                'charges[other]': charges.other
             };
 
-            // Add receipt image if online payment
             if (selectedMethod === 'online' && receiptImage) {
                 checkoutData.receipt = receiptImage;
             }
 
             console.log('Placing order with data:', checkoutData);
 
-            // Make checkout request
             const result = await postFormData('/api/orders/checkout', checkoutData, true);
 
             if (result) {
-                // Refresh cart data
                 refetchCart();
 
                 Alert.alert(
@@ -270,7 +254,6 @@ export default function PaymentScreen({ navigation, route }) {
                         {
                             text: "OK",
                             onPress: () => {
-                                // Navigate to order success or home screen
                                 navigation.reset({
                                     index: 0,
                                     routes: [{ name: 'MainDrawer' }],
@@ -354,7 +337,6 @@ export default function PaymentScreen({ navigation, route }) {
                     <View style={{ width: 24 }} />
                 </View>
 
-                {/* Delivery Information */}
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Delivery Information</Text>
 

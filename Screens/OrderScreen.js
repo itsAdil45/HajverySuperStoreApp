@@ -65,6 +65,27 @@ export default function OrderScreen({ navigation }) {
         return items.reduce((total, item) => total + item.quantity, 0);
     };
 
+    // Helper function to get display name for an item
+    const getItemDisplayName = (item) => {
+        if (item.itemType === 'deal') {
+            return item.deal?.title || 'Deal Item';
+        } else {
+            return item.product?.name || 'Product';
+        }
+    };
+
+    // Helper function to format items preview with both products and deals
+    const formatItemsPreview = (items) => {
+        const previewItems = items.slice(0, 2).map((item) => {
+            const displayName = getItemDisplayName(item);
+            return `${displayName} (${item.quantity}x)`;
+        }).join(', ');
+
+        return items.length > 2
+            ? `${previewItems} +${items.length - 2} more`
+            : previewItems;
+    };
+
     const renderOrderItem = ({ item }) => (
         <TouchableOpacity
             style={styles.orderCard}
@@ -74,7 +95,6 @@ export default function OrderScreen({ navigation }) {
             <View style={styles.orderHeader}>
                 <View style={styles.orderIconContainer}>
                     <Feather name='package' size={24} color="#6b7280" />
-
                 </View>
                 <View style={styles.orderInfo}>
                     <Text style={styles.orderId}>#{item._id.slice(-8).toUpperCase()}</Text>
@@ -95,10 +115,7 @@ export default function OrderScreen({ navigation }) {
 
             <View style={styles.orderDetails}>
                 <Text style={styles.itemsPreview}>
-                    {item.items.slice(0, 2).map((orderItem, index) =>
-                        `${orderItem.product?.name || 'Product'} (${orderItem.quantity}x)`
-                    ).join(', ')}
-                    {item.items.length > 2 && ` +${item.items.length - 2} more`}
+                    {formatItemsPreview(item.items)}
                 </Text>
             </View>
 

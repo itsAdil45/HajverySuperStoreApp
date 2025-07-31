@@ -10,71 +10,126 @@ import {
     FlatList,
     ActivityIndicator
 } from 'react-native';
-import { Ionicons, Feather } from '@expo/vector-icons'; // or react-native-vector-icons
+import { Ionicons, Feather, MaterialIcons } from '@expo/vector-icons';
 import useGet from '../hooks/useGet';
 import { useEffect, useState } from 'react';
-import { useContext } from 'react';
-// import { UserContext } from '../contexts/UserContext'; // adjust path
 import { useAuth } from '../contexts/AuthContext';
-const bestDeals = [
-    {
-        id: '1',
-        title: 'Surf Excel Easy Wash Detergent Power',
-        qty: '500 ml',
-        price: '$12',
-        mrp: '$14',
-        image: require('../assets/cat1.png'),
-    },
-    {
-        id: '2',
-        title: 'Fortune Arhar Dal (Toor Dal)',
-        qty: '1 kg',
-        price: '$10',
-        mrp: '$12',
-        image: require('../assets/cat1.png'),
-    },
-];
 
 const Home = ({ navigation }) => {
-    const { data, loading, error, refetch } = useGet('/categories/all_main');
+    const { data: categoriesData, loading: categoriesLoading, error: categoriesError, refetch: refetchCategories } = useGet('/categories/all_main');
+    const { data: dealsData, loading: dealsLoading, error: dealsError, refetch: refetchDeals } = useGet('/deals');
+
     const [categories, setCategories] = useState([]);
+    const [deals, setDeals] = useState([]);
     const [keyword, setKeyword] = useState('');
-    // const { LoggedInUser } = useContext(UserContext);\
     const { user } = useAuth();
 
     useEffect(() => {
-        if (data && data.categories) {
-            setCategories(data.categories);
+        if (categoriesData && categoriesData.categories) {
+            setCategories(categoriesData.categories);
         }
-    }, [data]);
+    }, [categoriesData]);
 
-    if (loading) {
+    useEffect(() => {
+        if (dealsData && dealsData.deals) {
+            setDeals(dealsData.deals);
+        }
+    }, [dealsData]);
+
+    const formatPrice = (price) => {
+        return `$${price.toFixed(2)}`;
+    };
+
+    const calculateSavings = (originalPrice, dealPrice) => {
+        const savings = originalPrice - dealPrice;
+        const percentage = Math.round((savings / originalPrice) * 100);
+        return { savings: formatPrice(savings), percentage };
+    };
+
+    if (categoriesLoading || dealsLoading) {
         return (
             <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#0000ff" />
-                <Text>Loading categories...</Text>
+                <ActivityIndicator size="large" color="#00C851" />
+                <Text style={styles.loadingText}>Loading...</Text>
             </View>
         );
     }
 
-    if (error) {
+    if (categoriesError || dealsError) {
         return (
             <View style={styles.errorContainer}>
-                <Text style={styles.errorText}>Error loading categories</Text>
-                <TouchableOpacity style={styles.retryBtn} onPress={refetch}>
+                <MaterialIcons name="error-outline" size={48} color="#FF5252" />
+                <Text style={styles.errorText}>Something went wrong</Text>
+                <TouchableOpacity
+                    style={styles.retryBtn}
+                    onPress={() => {
+                        refetchCategories();
+                        refetchDeals();
+                    }}
+                >
                     <Text style={styles.retryText}>Retry</Text>
                 </TouchableOpacity>
             </View>
         );
     }
 
+    const renderDealCard = ({ item }) => {
+        const dealProduct = item.products[0]?.product;
+        const savings = calculateSavings(item.originalPrice, item.dealPrice);
+
+        return (
+            <TouchableOpacity
+                style={styles.dealCard}
+                activeOpacity={0.9}
+                onPress={() => navigation.navigate('DealDetails', { dealId: item._id })}
+            >
+                {/* Image with Badge */}
+                <View style={styles.dealImageContainer}>
+                    <Image
+                        source={{ uri: item.bannerImage }}
+                        style={styles.dealImage}
+                        resizeMode="cover"
+                    />
+                    <View style={styles.dealBadge}>
+                        <Text style={styles.dealBadgeText}>{savings.percentage}% OFF</Text>
+                    </View>
+                </View>
+
+                {/* Deal Info - Compact Layout */}
+                <View style={styles.dealInfo}>
+                    <Text style={styles.dealTitle} numberOfLines={1}>{item.title}</Text>
+
+                    {/* Price Row */}
+                    <View style={styles.priceRow}>
+                        <Text style={styles.currentPrice}>{formatPrice(item.dealPrice)}</Text>
+                        <Text style={styles.originalPrice}>{formatPrice(item.originalPrice)}</Text>
+                    </View>
+
+                    {/* Savings & Timer */}
+                    <View style={styles.dealMeta}>
+                        <View style={styles.savingsPill}>
+                            <Text style={styles.savingsText}>Save {savings.savings}</Text>
+                        </View>
+                        <View style={styles.timerContainer}>
+                            <MaterialIcons name="access-time" size={12} color="#FF5722" />
+                            <Text style={styles.timerText}>
+                                {new Date(item.validUntil).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                            </Text>
+                        </View>
+                    </View>
+                </View>
+            </TouchableOpacity>
+        );
+    };
     return (
-        <ScrollView style={styles.container}>
+        <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
             {/* Header */}
             <View style={styles.header}>
                 <View>
                     <Text style={styles.locationTitle}>Home</Text>
-                    <Text style={styles.locationText}>{user?.address.split("+")[0].trim()}</Text>
+                    <Text style={styles.locationText}>
+                        {user?.address?.split("+")[0]?.trim() || 'Select Location'}
+                    </Text>
                 </View>
                 <TouchableOpacity onPress={() => navigation.navigate("CartTab")}>
                     <Feather name="shopping-cart" size={22} color="#000" />
@@ -85,17 +140,17 @@ const Home = ({ navigation }) => {
             <View style={styles.searchContainer}>
                 <View style={styles.searchBox}>
                     <TextInput
-                        placeholder="Search"
+                        placeholder="Search products..."
                         style={styles.searchInput}
                         value={keyword}
                         onChangeText={setKeyword}
                         returnKeyType="search"
+                        placeholderTextColor="#888"
                         onSubmitEditing={() => {
                             if (keyword?.trim()) {
                                 navigation.navigate('SearchResult', { search: keyword.trim() });
                             }
                         }}
-
                     />
                 </View>
                 <TouchableOpacity
@@ -109,7 +164,6 @@ const Home = ({ navigation }) => {
                     <Ionicons name="search" size={18} color="#fff" />
                 </TouchableOpacity>
             </View>
-
 
             {/* Shop by Category */}
             <View style={styles.sectionHeader}>
@@ -127,7 +181,6 @@ const Home = ({ navigation }) => {
                             style={styles.categoryItem}
                             onPress={() => navigation.navigate("CategoryProducts", { mainCategoryID: cat._id })}
                         >
-
                             <Image source={{ uri: cat.icon }} style={styles.categoryIcon} />
                             <Text style={styles.categoryText}>{cat.name}</Text>
                         </TouchableOpacity>
@@ -141,57 +194,100 @@ const Home = ({ navigation }) => {
 
             {/* Banner */}
             <View style={styles.banner}>
-                <Text style={styles.bannerTitle}>World Food Festival,{"\n"}Bring the world to your Kitchen!</Text>
+                <Text style={styles.bannerTitle}>
+                    World Food Festival,{"\n"}Bring the world to your Kitchen!
+                </Text>
                 <TouchableOpacity style={styles.shopNowBtn}>
                     <Text style={styles.shopNowText}>Shop Now</Text>
                 </TouchableOpacity>
                 <Image source={require('../assets/cat1.png')} style={styles.bannerImage} />
             </View>
 
-            {/* Best Deal */}
+            {/* Hot Deals Section */}
             <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Best Deal</Text>
-                <TouchableOpacity>
+                <View style={styles.sectionTitleContainer}>
+                    <MaterialIcons name="local-fire-department" size={20} color="#FF5722" />
+                    <Text style={styles.sectionTitle}>Hot Deals</Text>
+                </View>
+                <TouchableOpacity onPress={() => navigation.navigate('DealsTab')}>
                     <Text style={styles.seeAll}>See All</Text>
                 </TouchableOpacity>
             </View>
 
-            <FlatList
-                data={bestDeals}
-                keyExtractor={item => item.id}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ paddingLeft: 15 }}
-                renderItem={({ item }) => (
-                    <View style={styles.dealCard}>
-                        <Image source={item.image} style={styles.dealImage} />
-                        <Text style={styles.dealTitle}>{item.title}</Text>
-                        <Text style={styles.dealQty}>{item.qty}</Text>
-                        <View style={styles.priceRow}>
-                            <Text style={styles.oldPrice}>{item.mrp}</Text>
-                            <Text style={styles.newPrice}>{item.price}</Text>
-                        </View>
-                        <TouchableOpacity style={styles.addBtn}>
-                            <Text style={styles.addBtnText}>Add</Text>
-                        </TouchableOpacity>
-                    </View>
-                )}
-            />
+            {deals && deals.length > 0 ? (
+                <FlatList
+                    data={deals}
+                    keyExtractor={item => item.id}
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.dealsContainer}
+                    renderItem={renderDealCard}
+                />
+            ) : (
+                <View style={styles.noDealsContainer}>
+                    <MaterialIcons name="local-offer" size={48} color="#ccc" />
+                    <Text style={styles.noDealsText}>No active deals at the moment</Text>
+                </View>
+            )}
         </ScrollView>
     );
 };
 
 const styles = StyleSheet.create({
-    container: { backgroundColor: '#fff', flex: 1 },
+    container: {
+        backgroundColor: '#fff',
+        flex: 1
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#fff',
+    },
+    loadingText: {
+        marginTop: 10,
+        fontSize: 16,
+        color: '#666',
+    },
+    errorContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#fff',
+        padding: 20,
+    },
+    errorText: {
+        fontSize: 18,
+        color: '#FF5252',
+        marginVertical: 10,
+        textAlign: 'center',
+    },
+    retryBtn: {
+        backgroundColor: '#00C851',
+        paddingHorizontal: 24,
+        paddingVertical: 12,
+        borderRadius: 25,
+        marginTop: 10,
+    },
+    retryText: {
+        color: '#fff',
+        fontWeight: '600',
+        fontSize: 16,
+    },
     header: {
         padding: 35,
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
     },
-    locationTitle: { fontSize: 16, fontWeight: 'bold' },
-    locationText: { fontSize: 12, color: '#888' },
-
+    locationTitle: {
+        fontSize: 16,
+        fontWeight: 'bold'
+    },
+    locationText: {
+        fontSize: 12,
+        color: '#888'
+    },
     searchContainer: {
         flexDirection: 'row',
         paddingHorizontal: 15,
@@ -211,22 +307,35 @@ const styles = StyleSheet.create({
         flex: 1,
         fontSize: 14,
     },
+
     filterBtn: {
         backgroundColor: '#00C851',
         padding: 10,
         borderRadius: 10,
         marginLeft: 10,
     },
-
     sectionHeader: {
         paddingHorizontal: 15,
-        paddingTop: 10,
+        paddingTop: 20,
+        paddingBottom: 10,
         flexDirection: 'row',
         justifyContent: 'space-between',
+        alignItems: 'center',
     },
-    sectionTitle: { fontWeight: 'bold', fontSize: 16 },
-    seeAll: { color: '#00C851', fontSize: 12 },
-
+    sectionTitleContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    sectionTitle: {
+        fontWeight: 'bold',
+        fontSize: 18,
+        marginLeft: 5,
+    },
+    seeAll: {
+        color: '#00C851',
+        fontSize: 14,
+        fontWeight: '600',
+    },
     categoryRow: {
         paddingVertical: 10,
         paddingLeft: 15,
@@ -245,8 +354,16 @@ const styles = StyleSheet.create({
     categoryText: {
         fontSize: 12,
         textAlign: 'center',
+        fontWeight: '500',
     },
-
+    noCategoriesContainer: {
+        padding: 20,
+        alignItems: 'center',
+    },
+    noCategoriesText: {
+        color: '#999',
+        fontSize: 14,
+    },
     banner: {
         margin: 15,
         backgroundColor: '#E6F9EC',
@@ -267,7 +384,10 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         alignSelf: 'flex-start',
     },
-    shopNowText: { color: '#fff', fontWeight: 'bold' },
+    shopNowText: {
+        color: '#fff',
+        fontWeight: 'bold'
+    },
     bannerImage: {
         position: 'absolute',
         right: 10,
@@ -276,53 +396,154 @@ const styles = StyleSheet.create({
         height: 100,
         resizeMode: 'contain',
     },
-
+    dealsContainer: {
+        paddingLeft: 15,
+        paddingBottom: 10,
+    },
     dealCard: {
+        width: 260,
+        marginRight: 12,
+        borderRadius: 12,
         backgroundColor: '#fff',
-        width: 160,
-        marginRight: 15,
-        borderRadius: 15,
-        padding: 10,
-        elevation: 2,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+        overflow: 'hidden',
+        borderWidth: 0.5,
+        borderColor: '#f0f0f0',
+    },
+    dealBadge: {
+        position: 'absolute',
+        top: 8,
+        right: 8,
+        backgroundColor: '#FF5722',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 12,
+    },
+    dealBadgeText: {
+        color: '#fff',
+        fontSize: 10,
+        fontWeight: 'bold',
+    },
+    dealImageContainer: {
+        height: 100,
+        width: '100%',
+        position: 'relative',
     },
     dealImage: {
         width: '100%',
-        height: 100,
-        resizeMode: 'contain',
-        marginBottom: 10,
+        height: '100%',
+    },
+    dealOverlay: {
+        position: 'absolute',
+        bottom: 10,
+        left: 15,
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 12,
+    },
+    dealLabel: {
+        fontSize: 10,
+        fontWeight: 'bold',
+        color: '#FF5722',
+        marginLeft: 4,
+    },
+    dealInfo: {
+        padding: 10,
     },
     dealTitle: {
-        fontSize: 14,
+        fontSize: 13,
         fontWeight: '600',
+        color: '#333',
+        marginBottom: 6,
     },
-    dealQty: {
+    dealDescription: {
+        fontSize: 11,
+        color: '#666',
+        marginBottom: 8,
+    },
+    productName: {
         fontSize: 12,
-        color: '#777',
+        color: '#888',
+        fontStyle: 'italic',
+        marginBottom: 12,
+    },
+    priceSection: {
+        marginBottom: 12,
     },
     priceRow: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginVertical: 5,
+        alignItems: 'baseline',
+        marginBottom: 6,
     },
-    oldPrice: {
-        color: '#aaa',
-        textDecorationLine: 'line-through',
-        fontSize: 12,
-    },
-    newPrice: {
-        color: '#00C851',
+    currentPrice: {
+        fontSize: 16,
         fontWeight: 'bold',
+        color: '#00C851',
+        marginRight: 6,
     },
-    addBtn: {
-        backgroundColor: '#00C851',
-        paddingVertical: 6,
+    originalPrice: {
+        fontSize: 12,
+        color: '#999',
+        textDecorationLine: 'line-through',
+    },
+    dealMeta: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    savingsPill: {
+        backgroundColor: '#FFF0E5',
         borderRadius: 10,
-        marginTop: 5,
+        paddingHorizontal: 6,
+        paddingVertical: 3,
     },
-    addBtnText: {
-        color: '#fff',
-        textAlign: 'center',
+    savingsText: {
+        fontSize: 10,
+        color: '#FF5722',
         fontWeight: '600',
+    },
+    timerContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    timerText: {
+        fontSize: 10,
+        color: '#FF5722',
+        marginLeft: 2,
+        fontWeight: '500',
+    },
+    dealActionBtn: {
+        backgroundColor: '#00C851',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 12,
+        borderRadius: 15,
+    },
+    dealActionText: {
+        color: '#fff',
+        fontWeight: 'bold',
+        fontSize: 14,
+        marginRight: 8,
+    },
+    noDealsContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 40,
+
+    },
+    noDealsText: {
+        fontSize: 16,
+        color: '#999',
+        marginTop: 10,
+        textAlign: 'center',
     },
 });
 

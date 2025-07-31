@@ -32,7 +32,17 @@ export default function CheckoutScreen() {
 
     const cartCategories = useMemo(() => {
         if (!cartData?.cart) return [];
-        return [...new Set(cartData.cart.map(item => item.product.brand))];
+        const categories = cartData.cart.map(item => {
+            if (item.itemType === 'product') {
+                return item.product.brand;
+            } else if (item.itemType === 'deal') {
+                // Get brands from deal products
+                return item.deal.products.map(product => product.brand);
+            }
+            return null;
+        }).flat().filter(Boolean);
+
+        return [...new Set(categories)];
     }, [cartData]);
 
     useFocusEffect(
@@ -61,7 +71,6 @@ export default function CheckoutScreen() {
 
         fetchRecommendations();
     }, [cartCategories, cartData]);
-
 
     const removeFromCart = async (cartItemId) => {
         const result = await deleteRequest(`/api/cart/remove/${cartItemId}`, true);
@@ -99,6 +108,7 @@ export default function CheckoutScreen() {
 
     const addToCart = async (product, variantName = 'Default') => {
         const result = await post('/api/cart/add', {
+            itemType: 'product',
             productId: product._id,
             quantity: 1,
             variantName: variantName
@@ -110,48 +120,121 @@ export default function CheckoutScreen() {
         }
     };
 
-    const renderCartItem = (item) => (
-        <View style={styles.cartItem} key={item._id}>
-            <Image
-                source={{ uri: item.product.images[0] }}
-                style={styles.cartImage}
-            />
-            <View style={{ flex: 1 }}>
-                <Text style={styles.cartTitle}>{item.product.name}</Text>
-                <Text style={{ color: "#777" }}>{item.variant.name}</Text>
-                <Text style={{ color: "#777" }}>Brand: {item.product.brand}</Text>
-                <View style={{
-                    display: "flex",
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    alignItems: "center"
-                }}>
-                    <View>
-                        <Text style={styles.cartPrice}>Rs{item.variant.currentPrice}</Text>
-                        {item.variant.isOnSale && (
-                            <Text style={styles.oldPrice}>Rs{item.variant.price}</Text>
-                        )}
-                    </View>
+    const renderDealProducts = (products) => {
+        return products.map((product, index) => (
+            <View key={`${product._id}-${index}`} style={styles.dealProduct}>
+                <Image
+                    source={{ uri: product.images[0] }}
+                    style={styles.dealProductImage}
+                />
+                <View style={styles.dealProductInfo}>
+                    <Text style={styles.dealProductName} numberOfLines={1}>{product.name}</Text>
+                    <Text style={styles.dealProductBrand}>{product.brand}</Text>
+                    <Text style={styles.dealProductVariant}>{product.variantName}</Text>
+                </View>
+            </View>
+        ));
+    };
 
-                    <View style={styles.qtyRow}>
-                        <TouchableOpacity
-                            onPress={() => updateQuantity(item._id, item.quantity - 1)}
-                            disabled={patchLoading || deleteLoading}
-                        >
-                            <Text style={styles.qtyBtn}>-</Text>
-                        </TouchableOpacity>
-                        <Text style={styles.qtyText}>{item.quantity}</Text>
-                        <TouchableOpacity
-                            onPress={() => updateQuantity(item._id, item.quantity + 1)}
-                            disabled={patchLoading || deleteLoading}
-                        >
-                            <Text style={styles.qtyBtn}>+</Text>
-                        </TouchableOpacity>
+    const renderCartItem = (item) => {
+        if (item.itemType === 'deal') {
+            return (
+                <View style={styles.cartItem} key={item._id}>
+                    <Image
+                        source={{ uri: item.deal.bannerImage }}
+                        style={styles.cartImage}
+                    />
+                    <View style={{ flex: 1 }}>
+                        <View style={styles.dealHeader}>
+                            <Text style={styles.dealBadge}>DEAL</Text>
+                        </View>
+                        <Text style={styles.cartTitle}>{item.deal.title}</Text>
+                        <Text style={styles.dealDescription} numberOfLines={2}>
+                            {item.deal.description}
+                        </Text>
+
+                        {/* Deal Products */}
+                        <View style={styles.dealProductsContainer}>
+                            <Text style={styles.dealProductsLabel}>Includes:</Text>
+                            {renderDealProducts(item.deal.products)}
+                        </View>
+
+                        <View style={styles.dealPricing}>
+                            <View>
+                                <View style={styles.priceRow}>
+                                    <Text style={styles.cartPrice}>Rs{item.deal.dealPrice.toFixed(2)}</Text>
+                                    <Text style={styles.oldPrice}>Rs{item.deal.originalPrice.toFixed(2)}</Text>
+                                </View>
+                                <Text style={styles.savingsText}>
+                                    Save Rs{item.deal.savings.toFixed(2)} ({item.deal.savingsPercentage}% off)
+                                </Text>
+                            </View>
+
+                            <View style={styles.qtyRow}>
+                                <TouchableOpacity
+                                    onPress={() => updateQuantity(item._id, item.quantity - 1)}
+                                    disabled={patchLoading || deleteLoading}
+                                >
+                                    <Text style={styles.qtyBtn}>-</Text>
+                                </TouchableOpacity>
+                                <Text style={styles.qtyText}>{item.quantity}</Text>
+                                <TouchableOpacity
+                                    onPress={() => updateQuantity(item._id, item.quantity + 1)}
+                                    disabled={patchLoading || deleteLoading}
+                                >
+                                    <Text style={styles.qtyBtn}>+</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </View>
+                </View>
+            );
+        }
+
+        // Regular product item
+        return (
+            <View style={styles.cartItem} key={item._id}>
+                <Image
+                    source={{ uri: item.product.images[0] }}
+                    style={styles.cartImage}
+                />
+                <View style={{ flex: 1 }}>
+                    <Text style={styles.cartTitle}>{item.product.name}</Text>
+                    <Text style={{ color: "#777" }}>{item.variant.name}</Text>
+                    <Text style={{ color: "#777" }}>Brand: {item.product.brand}</Text>
+                    <View style={{
+                        display: "flex",
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                        alignItems: "center"
+                    }}>
+                        <View>
+                            <Text style={styles.cartPrice}>Rs{item.variant.currentPrice}</Text>
+                            {item.variant.isOnSale && (
+                                <Text style={styles.oldPrice}>Rs{item.variant.price}</Text>
+                            )}
+                        </View>
+
+                        <View style={styles.qtyRow}>
+                            <TouchableOpacity
+                                onPress={() => updateQuantity(item._id, item.quantity - 1)}
+                                disabled={patchLoading || deleteLoading}
+                            >
+                                <Text style={styles.qtyBtn}>-</Text>
+                            </TouchableOpacity>
+                            <Text style={styles.qtyText}>{item.quantity}</Text>
+                            <TouchableOpacity
+                                onPress={() => updateQuantity(item._id, item.quantity + 1)}
+                                disabled={patchLoading || deleteLoading}
+                            >
+                                <Text style={styles.qtyBtn}>+</Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
                 </View>
             </View>
-        </View>
-    );
+        );
+    };
 
     const renderRecommendationItem = ({ item }) => (
         <TouchableOpacity style={styles.recommendCard} onPress={() => navigation.navigate("Product", { productId: item._id })}>
@@ -249,40 +332,36 @@ export default function CheckoutScreen() {
 
             {/* Summary Section */}
             <View style={styles.summary}>
-                <View style={{
-                    display: "flex",
-                    flexDirection: 'row',
-                    justifyContent: "space-between",
-                    paddingHorizontal: 10
-                }}>
+                <View style={styles.summaryRow}>
                     <Text style={styles.summaryText}>Items ({cartData.summary.totalQuantity}):</Text>
                     <Text style={styles.summaryText}>Rs{cartData.summary.total.toFixed(2)}</Text>
                 </View>
 
-                <View style={{
-                    display: "flex",
-                    flexDirection: 'row',
-                    justifyContent: "space-between",
-                    paddingHorizontal: 10
-                }}>
+                {cartData.summary.breakdown && (
+                    <View style={styles.breakdownContainer}>
+                        <View style={styles.summaryRow}>
+                            <Text style={styles.breakdownText}>• Products: {cartData.summary.breakdown.products}</Text>
+                        </View>
+                        <View style={styles.summaryRow}>
+                            <Text style={styles.breakdownText}>• Deals: {cartData.summary.breakdown.deals}</Text>
+                        </View>
+                    </View>
+                )}
+
+                <View style={styles.summaryRow}>
                     <Text style={styles.summaryText}>Discount:</Text>
                     <Text style={styles.summaryText}>Rs0.00</Text>
                 </View>
 
-                <View style={{
-                    display: "flex",
-                    flexDirection: 'row',
-                    justifyContent: "space-between",
-                    paddingHorizontal: 10
-                }}>
+                <View style={styles.summaryRow}>
                     <Text style={styles.summaryText}>Delivery:</Text>
                     <Text style={{ color: 'green' }}>Free</Text>
                 </View>
+
                 <Text style={styles.summaryTotal}>
                     Grand Total: Rs{cartData.summary.total.toFixed(2)}
                 </Text>
             </View>
-
 
             {/* Place Order Button */}
             <TouchableOpacity
@@ -331,6 +410,7 @@ const styles = {
         fontSize: 14,
         textDecorationLine: 'line-through',
         color: '#999',
+        marginLeft: 8,
     },
     qtyRow: {
         flexDirection: 'row',
@@ -349,6 +429,77 @@ const styles = {
         fontSize: 16,
         paddingHorizontal: 15,
     },
+    // Deal-specific styles
+    dealHeader: {
+        marginBottom: 5,
+    },
+    dealBadge: {
+        backgroundColor: '#FF6B35',
+        color: 'white',
+        fontSize: 10,
+        fontWeight: 'bold',
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        borderRadius: 10,
+        alignSelf: 'flex-start',
+    },
+    dealDescription: {
+        color: '#777',
+        fontSize: 12,
+        marginBottom: 8,
+    },
+    dealProductsContainer: {
+        marginBottom: 10,
+    },
+    dealProductsLabel: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        color: '#333',
+        marginBottom: 5,
+    },
+    dealProduct: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 3,
+    },
+    dealProductImage: {
+        width: 20,
+        height: 20,
+        borderRadius: 4,
+        marginRight: 8,
+    },
+    dealProductInfo: {
+        flex: 1,
+    },
+    dealProductName: {
+        fontSize: 11,
+        fontWeight: '600',
+        color: '#333',
+    },
+    dealProductBrand: {
+        fontSize: 10,
+        color: '#777',
+    },
+    dealProductVariant: {
+        fontSize: 10,
+        color: '#999',
+    },
+    dealPricing: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    priceRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    savingsText: {
+        fontSize: 12,
+        color: '#FF6B35',
+        fontWeight: '600',
+        marginTop: 2,
+    },
+    // Recommendation styles
     subheading: {
         fontSize: 18,
         fontWeight: 'bold',
@@ -371,11 +522,6 @@ const styles = {
         fontSize: 14,
         fontWeight: 'bold',
         marginBottom: 5,
-    },
-    priceRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginVertical: 5,
     },
     recommendPrice: {
         fontSize: 14,
@@ -415,9 +561,22 @@ const styles = {
         borderRadius: 10,
         marginBottom: 20,
     },
+    summaryRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingHorizontal: 10,
+        marginBottom: 8,
+    },
     summaryText: {
         fontSize: 16,
-        marginBottom: 8,
+    },
+    breakdownContainer: {
+        paddingLeft: 10,
+        marginBottom: 5,
+    },
+    breakdownText: {
+        fontSize: 14,
+        color: '#666',
     },
     summaryTotal: {
         fontSize: 18,
@@ -428,8 +587,6 @@ const styles = {
         borderTopWidth: 1,
         borderTopColor: '#ddd',
     },
-
-
     checkoutBtn: {
         backgroundColor: '#53B175',
         paddingVertical: 15,

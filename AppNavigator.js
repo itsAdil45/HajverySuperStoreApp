@@ -14,7 +14,7 @@ import SignupScreen from './Screens/SignupScreen';
 import UserAuthScreen from './Screens/UserAuthScreen';
 // Main App Screens
 import HomeScreen from './Screens/Home';
-import BestDealScreen from './Screens/BestDealScreen';
+import AllDeals from './Screens/AllDeals';
 import CategoryProductsScreen from './Screens/CategoryProductsScreen';
 import ProductScreen from './Screens/ProductScreen';
 import ProfileScreen from './Screens/ProfileScreen';
@@ -25,6 +25,7 @@ import OrderScreen from './Screens/OrderScreen';
 import EditProfileScreen from './Screens/EditProfileScreen';
 import MainCategoriesScreen from './Screens/MainCategoriesScreen';
 import SearchResultScreen from './Screens/SearchResultScreen';
+import DealDetails from './Screens/DealDetails';
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 const Drawer = createDrawerNavigator();
@@ -112,7 +113,7 @@ const MainTabNavigator = ({ navigation }) => {
 
             <Tab.Screen
                 name="DealsTab"
-                component={BestDealScreen}
+                component={AllDeals}
                 options={{
                     tabBarLabel: 'Deals',
                     tabBarIcon: ({ color, size }) => <Feather name="package" size={size} color={color} />
@@ -192,6 +193,11 @@ const MainStackNavigator = () => {
             <Stack.Screen
                 name="Product"
                 component={ProductScreen}
+                options={{ headerShown: true }}
+            />
+            <Stack.Screen
+                name="DealDetails"
+                component={DealDetails}
                 options={{ headerShown: true }}
             />
             <Stack.Screen
