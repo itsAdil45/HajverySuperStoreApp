@@ -1,4 +1,3 @@
-import React from 'react';
 import {
     View,
     Text,
@@ -8,12 +7,27 @@ import {
     Image,
     TouchableOpacity,
     FlatList,
-    ActivityIndicator
+    ActivityIndicator,
+    Dimensions
 } from 'react-native';
 import { Ionicons, Feather, MaterialIcons } from '@expo/vector-icons';
 import useGet from '../hooks/useGet';
 import { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import Animated, {
+    useSharedValue,
+    useAnimatedStyle,
+    withRepeat,
+    withTiming,
+    interpolate,
+    withSpring,
+    withSequence,
+    Easing,
+    runOnJS,
+    useAnimatedScrollHandler
+} from 'react-native-reanimated';
+
+const { width } = Dimensions.get('window');
 
 const Home = ({ navigation }) => {
     const { data: categoriesData, loading: categoriesLoading, error: categoriesError, refetch: refetchCategories } = useGet('/categories/all_main');
@@ -23,6 +37,13 @@ const Home = ({ navigation }) => {
     const [deals, setDeals] = useState([]);
     const [keyword, setKeyword] = useState('');
     const { user } = useAuth();
+
+    // Animation values
+    const scrollY = useSharedValue(0);
+    const saleAnimation = useSharedValue(0);
+    const pulseAnimation = useSharedValue(0);
+    const shimmerAnimation = useSharedValue(0);
+    const headerOpacity = useSharedValue(1);
 
     useEffect(() => {
         if (categoriesData && categoriesData.categories) {
@@ -35,6 +56,93 @@ const Home = ({ navigation }) => {
             setDeals(dealsData.deals);
         }
     }, [dealsData]);
+
+    useEffect(() => {
+        // Sale badge floating animation
+        // saleAnimation.value = withRepeat(
+        //     withSequence(
+        //         withTiming(1, { duration: 2000, easing: Easing.inOut(Easing.ease) }),
+        //         withTiming(0, { duration: 2000, easing: Easing.inOut(Easing.ease) })
+        //     ),
+        //     -1,
+        //     false
+        // );
+
+        // // Pulse animation for hot deals
+        // pulseAnimation.value = withRepeat(
+        //     withSequence(
+        //         withTiming(1, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
+        //         withTiming(0, { duration: 1500, easing: Easing.inOut(Easing.ease) })
+        //     ),
+        //     -1,
+        //     false
+        // );
+
+        // // Shimmer effect for banner
+        // shimmerAnimation.value = withRepeat(
+        //     withTiming(1, { duration: 3000, easing: Easing.linear }),
+        //     -1,
+        //     false
+        // );
+    }, []);
+
+    const scrollHandler = useAnimatedScrollHandler({
+        onScroll: (event) => {
+            scrollY.value = event.contentOffset.y;
+            headerOpacity.value = interpolate(
+                event.contentOffset.y,
+                [0, 100],
+                [1, 0.8],
+                'clamp'
+            );
+        },
+    });
+
+    const animatedHeaderStyle = useAnimatedStyle(() => {
+        return {
+            opacity: headerOpacity.value,
+            transform: [
+                {
+                    translateY: interpolate(
+                        scrollY.value,
+                        [0, 100],
+                        [0, -10],
+                        'clamp'
+                    )
+                }
+            ]
+        };
+    });
+
+    const animatedSaleBadgeStyle = useAnimatedStyle(() => {
+        const translateY = interpolate(saleAnimation.value, [0, 1], [0, -5]);
+        const scale = interpolate(saleAnimation.value, [0, 0.5, 1], [1, 1.05, 1]);
+
+        return {
+            transform: [
+                { translateY },
+                { scale }
+            ]
+        };
+    });
+
+    const animatedPulseStyle = useAnimatedStyle(() => {
+        const scale = interpolate(pulseAnimation.value, [0, 1], [1, 1.1]);
+        const opacity = interpolate(pulseAnimation.value, [0, 0.5, 1], [0.7, 1, 0.7]);
+
+        return {
+            transform: [{ scale }],
+            opacity
+        };
+    });
+
+    const animatedShimmerStyle = useAnimatedStyle(() => {
+        const translateX = interpolate(shimmerAnimation.value, [0, 1], [-width, width]);
+
+        return {
+            transform: [{ translateX }]
+        };
+    });
 
     const formatPrice = (price) => {
         return `$${price.toFixed(2)}`;
@@ -49,8 +157,10 @@ const Home = ({ navigation }) => {
     if (categoriesLoading || dealsLoading) {
         return (
             <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#00C851" />
-                <Text style={styles.loadingText}>Loading...</Text>
+                <Animated.View style={animatedPulseStyle}>
+                    <ActivityIndicator size="large" color="#00C851" />
+                </Animated.View>
+                <Text style={styles.loadingText}>Loading amazing deals...</Text>
             </View>
         );
     }
@@ -59,7 +169,7 @@ const Home = ({ navigation }) => {
         return (
             <View style={styles.errorContainer}>
                 <MaterialIcons name="error-outline" size={48} color="#FF5252" />
-                <Text style={styles.errorText}>Something went wrong</Text>
+                <Text style={styles.errorText}>Oops! Something went wrong</Text>
                 <TouchableOpacity
                     style={styles.retryBtn}
                     onPress={() => {
@@ -67,80 +177,121 @@ const Home = ({ navigation }) => {
                         refetchDeals();
                     }}
                 >
-                    <Text style={styles.retryText}>Retry</Text>
+                    <Text style={styles.retryText}>Try Again</Text>
                 </TouchableOpacity>
             </View>
         );
     }
 
-    const renderDealCard = ({ item }) => {
+    const renderDealCard = ({ item, index }) => {
         const dealProduct = item.products[0]?.product;
         const savings = calculateSavings(item.originalPrice, item.dealPrice);
 
         return (
+            <View style={styles.dealCard}>
+                <TouchableOpacity
+                    activeOpacity={0.9}
+                    onPress={() => navigation.navigate('DealDetails', { dealId: item._id })}
+                >
+                    {/* Image with Animated Badge */}
+                    <View style={styles.dealImageContainer}>
+                        <Image
+                            source={{ uri: item.bannerImage }}
+                            style={styles.dealImage}
+                            resizeMode="cover"
+                        />
+
+                        {/* Animated Sale Badge */}
+                        <Animated.View style={[styles.dealBadge, animatedSaleBadgeStyle]}>
+                            <Text style={styles.dealBadgeText}>{savings.percentage}% OFF</Text>
+                            <View style={styles.sparkle}>
+                                <Text style={styles.sparkleText}>✨</Text>
+                            </View>
+                        </Animated.View>
+
+                        {/* Gradient Overlay */}
+                        <View style={styles.gradientOverlay} />
+                    </View>
+
+                    {/* Deal Info with Modern Layout */}
+                    <View style={styles.dealInfo}>
+                        <Text style={styles.dealTitle} numberOfLines={1}>{item.title}</Text>
+
+                        {/* Price Row with Better Spacing */}
+                        <View style={styles.priceRow}>
+                            <Text style={styles.currentPrice}>{formatPrice(item.dealPrice)}</Text>
+                            <Text style={styles.originalPrice}>{formatPrice(item.originalPrice)}</Text>
+                        </View>
+
+                        {/* Enhanced Meta Info */}
+                        <View style={styles.dealMeta}>
+                            <View style={styles.savingsPill}>
+                                <MaterialIcons name="savings" size={10} color="#FF5722" />
+                                <Text style={styles.savingsText}>Save {savings.savings}</Text>
+                            </View>
+                            <View style={styles.timerContainer}>
+                                <MaterialIcons name="schedule" size={12} color="#FF5722" />
+                                <Text style={styles.timerText}>
+                                    {new Date(item.validUntil).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                </Text>
+                            </View>
+                        </View>
+
+                        {/* Action Button */}
+                        <TouchableOpacity style={styles.dealActionBtn}>
+                            <Text style={styles.dealActionText}>Grab Deal</Text>
+                            <MaterialIcons name="arrow-forward" size={14} color="#fff" />
+                        </TouchableOpacity>
+                    </View>
+                </TouchableOpacity>
+            </View>
+        );
+    };
+
+    const renderCategoryItem = ({ item, index }) => {
+        return (
             <TouchableOpacity
-                style={styles.dealCard}
-                activeOpacity={0.9}
-                onPress={() => navigation.navigate('DealDetails', { dealId: item._id })}
+                style={styles.categoryItem}
+                onPress={() => navigation.navigate("Products", { mainCategoryID: item._id })}
             >
-                {/* Image with Badge */}
-                <View style={styles.dealImageContainer}>
-                    <Image
-                        source={{ uri: item.bannerImage }}
-                        style={styles.dealImage}
-                        resizeMode="cover"
-                    />
-                    <View style={styles.dealBadge}>
-                        <Text style={styles.dealBadgeText}>{savings.percentage}% OFF</Text>
-                    </View>
+                <View style={styles.categoryIconContainer}>
+                    <Image source={{ uri: item.icon }} style={styles.categoryIcon} />
+                    <View style={styles.categoryIconOverlay} />
                 </View>
-
-                {/* Deal Info - Compact Layout */}
-                <View style={styles.dealInfo}>
-                    <Text style={styles.dealTitle} numberOfLines={1}>{item.title}</Text>
-
-                    {/* Price Row */}
-                    <View style={styles.priceRow}>
-                        <Text style={styles.currentPrice}>{formatPrice(item.dealPrice)}</Text>
-                        <Text style={styles.originalPrice}>{formatPrice(item.originalPrice)}</Text>
-                    </View>
-
-                    {/* Savings & Timer */}
-                    <View style={styles.dealMeta}>
-                        <View style={styles.savingsPill}>
-                            <Text style={styles.savingsText}>Save {savings.savings}</Text>
-                        </View>
-                        <View style={styles.timerContainer}>
-                            <MaterialIcons name="access-time" size={12} color="#FF5722" />
-                            <Text style={styles.timerText}>
-                                {new Date(item.validUntil).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                            </Text>
-                        </View>
-                    </View>
-                </View>
+                <Text style={styles.categoryText}>{item.name}</Text>
             </TouchableOpacity>
         );
     };
+
     return (
-        <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-            {/* Header */}
-            <View style={styles.header}>
+        <Animated.ScrollView
+            style={styles.container}
+            showsVerticalScrollIndicator={false}
+            onScroll={scrollHandler}
+            scrollEventThrottle={16}
+        >
+            {/* Animated Header */}
+            <Animated.View style={[styles.header, animatedHeaderStyle]}>
                 <View>
-                    <Text style={styles.locationTitle}>Home</Text>
+                    <Text style={styles.locationTitle}>Hello! 👋</Text>
                     <Text style={styles.locationText}>
                         {user?.address?.split("+")[0]?.trim() || 'Select Location'}
                     </Text>
                 </View>
-                <TouchableOpacity onPress={() => navigation.navigate("CartTab")}>
+                <TouchableOpacity style={styles.cartButton} onPress={() => navigation.navigate("CartTab")}>
                     <Feather name="shopping-cart" size={22} color="#000" />
+                    <View style={styles.cartBadge}>
+                        <Text style={styles.cartBadgeText}>3</Text>
+                    </View>
                 </TouchableOpacity>
-            </View>
+            </Animated.View>
 
-            {/* Search Bar */}
+            {/* Enhanced Search Bar */}
             <View style={styles.searchContainer}>
                 <View style={styles.searchBox}>
+                    <Ionicons name="search-outline" size={20} color="#888" />
                     <TextInput
-                        placeholder="Search products..."
+                        placeholder="What are you craving today?"
                         style={styles.searchInput}
                         value={keyword}
                         onChangeText={setKeyword}
@@ -161,54 +312,61 @@ const Home = ({ navigation }) => {
                         }
                     }}
                 >
-                    <Ionicons name="search" size={18} color="#fff" />
+                    <Ionicons name="options-outline" size={18} color="#fff" />
                 </TouchableOpacity>
             </View>
 
-            {/* Shop by Category */}
+            {/* Categories Section */}
             <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Shop By Category</Text>
+                <Text style={styles.sectionTitle}>Explore Categories</Text>
                 <TouchableOpacity onPress={() => navigation.navigate("CategoryTab")}>
-                    <Text style={styles.seeAll}>See All</Text>
+                    <Text style={styles.seeAll}>View All</Text>
                 </TouchableOpacity>
             </View>
 
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryRow}>
-                {categories && categories.length > 0 ? (
-                    categories.map((cat, key) => (
+            {categories && categories.length > 0 ? (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryRow}>
+                    {categories.map((cat, index) => (
                         <TouchableOpacity
-                            key={cat.id || key}
+                            key={cat.id || index}
                             style={styles.categoryItem}
-                            onPress={() => navigation.navigate("CategoryProducts", { mainCategoryID: cat._id })}
+                            onPress={() => navigation.navigate("Products", { mainCategoryID: cat._id })}
                         >
-                            <Image source={{ uri: cat.icon }} style={styles.categoryIcon} />
+                            <View style={styles.categoryIconContainer}>
+                                <Image source={{ uri: cat.icon }} style={styles.categoryIcon} />
+                                <View style={styles.categoryIconOverlay} />
+                            </View>
                             <Text style={styles.categoryText}>{cat.name}</Text>
                         </TouchableOpacity>
-                    ))
-                ) : (
-                    <View style={styles.noCategoriesContainer}>
-                        <Text style={styles.noCategoriesText}>No categories available</Text>
-                    </View>
-                )}
-            </ScrollView>
+                    ))}
+                </ScrollView>
+            ) : (
+                <View style={styles.noCategoriesContainer}>
+                    <Text style={styles.noCategoriesText}>🍽️ Categories coming soon!</Text>
+                </View>
+            )}
 
-            {/* Banner */}
+            {/* Enhanced Banner with Shimmer Effect */}
             <View style={styles.banner}>
-                <Text style={styles.bannerTitle}>
-                    World Food Festival,{"\n"}Bring the world to your Kitchen!
-                </Text>
-                <TouchableOpacity style={styles.shopNowBtn}>
-                    <Text style={styles.shopNowText}>Shop Now</Text>
-                </TouchableOpacity>
+                <Animated.View style={[styles.shimmerOverlay, animatedShimmerStyle]} />
+                <View style={styles.bannerContent}>
+                    <Text style={styles.bannerTitle}>
+                        🌍 World Food Festival{"\n"}Bring the world to your Kitchen!
+                    </Text>
+                    <TouchableOpacity style={styles.shopNowBtn}>
+                        <Text style={styles.shopNowText}>Explore Now</Text>
+                        <MaterialIcons name="explore" size={16} color="#fff" />
+                    </TouchableOpacity>
+                </View>
                 <Image source={require('../assets/cat1.png')} style={styles.bannerImage} />
             </View>
 
-            {/* Hot Deals Section */}
+            {/* Hot Deals Section with Pulse Animation */}
             <View style={styles.sectionHeader}>
-                <View style={styles.sectionTitleContainer}>
-                    <MaterialIcons name="local-fire-department" size={20} color="#FF5722" />
+                <Animated.View style={[styles.sectionTitleContainer, animatedPulseStyle]}>
+                    <MaterialIcons name="local-fire-department" size={22} color="#FF5722" />
                     <Text style={styles.sectionTitle}>Hot Deals</Text>
-                </View>
+                </Animated.View>
                 <TouchableOpacity onPress={() => navigation.navigate('DealsTab')}>
                     <Text style={styles.seeAll}>See All</Text>
                 </TouchableOpacity>
@@ -217,7 +375,7 @@ const Home = ({ navigation }) => {
             {deals && deals.length > 0 ? (
                 <FlatList
                     data={deals}
-                    keyExtractor={item => item.id}
+                    keyExtractor={(item, index) => item.id || index.toString()}
                     horizontal
                     showsHorizontalScrollIndicator={false}
                     contentContainerStyle={styles.dealsContainer}
@@ -226,10 +384,13 @@ const Home = ({ navigation }) => {
             ) : (
                 <View style={styles.noDealsContainer}>
                     <MaterialIcons name="local-offer" size={48} color="#ccc" />
-                    <Text style={styles.noDealsText}>No active deals at the moment</Text>
+                    <Text style={styles.noDealsText}>🎯 Amazing deals loading...</Text>
                 </View>
             )}
-        </ScrollView>
+
+            {/* Bottom Spacing */}
+            <View style={styles.bottomSpacing} />
+        </Animated.ScrollView>
     );
 };
 
@@ -245,9 +406,10 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
     },
     loadingText: {
-        marginTop: 10,
+        marginTop: 15,
         fontSize: 16,
         color: '#666',
+        fontWeight: '500',
     },
     errorContainer: {
         flex: 1,
@@ -259,65 +421,103 @@ const styles = StyleSheet.create({
     errorText: {
         fontSize: 18,
         color: '#FF5252',
-        marginVertical: 10,
+        marginVertical: 15,
         textAlign: 'center',
+        fontWeight: '600',
     },
     retryBtn: {
         backgroundColor: '#00C851',
-        paddingHorizontal: 24,
-        paddingVertical: 12,
+        paddingHorizontal: 28,
+        paddingVertical: 14,
         borderRadius: 25,
         marginTop: 10,
+        shadowColor: '#00C851',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 6,
     },
     retryText: {
         color: '#fff',
-        fontWeight: '600',
+        fontWeight: '700',
         fontSize: 16,
     },
     header: {
-        padding: 35,
+        padding: 20,
+        paddingTop: 50,
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
+        backgroundColor: '#fff',
     },
     locationTitle: {
-        fontSize: 16,
-        fontWeight: 'bold'
+        fontSize: 18,
+        fontWeight: '700',
+        color: '#333',
     },
     locationText: {
-        fontSize: 12,
-        color: '#888'
+        fontSize: 13,
+        color: '#666',
+        marginTop: 2,
+    },
+    cartButton: {
+        position: 'relative',
+        padding: 8,
+    },
+    cartBadge: {
+        position: 'absolute',
+        top: 0,
+        right: 0,
+        backgroundColor: '#FF5722',
+        borderRadius: 10,
+        width: 18,
+        height: 18,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    cartBadgeText: {
+        color: '#fff',
+        fontSize: 10,
+        fontWeight: 'bold',
     },
     searchContainer: {
         flexDirection: 'row',
-        paddingHorizontal: 15,
+        paddingHorizontal: 20,
         alignItems: 'center',
         marginBottom: 10,
     },
     searchBox: {
         flex: 1,
         flexDirection: 'row',
-        backgroundColor: '#F5F5F5',
-        padding: 10,
-        borderRadius: 10,
+        backgroundColor: '#F8F9FA',
+        paddingVertical: 12,
+        paddingHorizontal: 15,
+        borderRadius: 15,
         alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#E9ECEF',
     },
     searchInput: {
         marginLeft: 10,
         flex: 1,
-        fontSize: 14,
+        fontSize: 15,
+        color: '#333',
     },
-
     filterBtn: {
         backgroundColor: '#00C851',
-        padding: 10,
-        borderRadius: 10,
-        marginLeft: 10,
+        padding: 12,
+        borderRadius: 15,
+        marginLeft: 12,
+        shadowColor: '#00C851',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+        elevation: 4,
     },
     sectionHeader: {
-        paddingHorizontal: 15,
-        paddingTop: 20,
-        paddingBottom: 10,
+        paddingHorizontal: 20,
+        paddingTop: 25,
+        paddingBottom: 15,
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
@@ -327,9 +527,10 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     sectionTitle: {
-        fontWeight: 'bold',
-        fontSize: 18,
-        marginLeft: 5,
+        fontWeight: '700',
+        fontSize: 20,
+        marginLeft: 8,
+        color: '#333',
     },
     seeAll: {
         color: '#00C851',
@@ -338,98 +539,120 @@ const styles = StyleSheet.create({
     },
     categoryRow: {
         paddingVertical: 10,
-        paddingLeft: 15,
+        paddingLeft: 20,
     },
     categoryItem: {
-        marginRight: 15,
+        marginRight: 20,
         alignItems: 'center',
-        width: 80,
+        width: 85,
+    },
+    categoryIconContainer: {
+        position: 'relative',
+        marginBottom: 8,
     },
     categoryIcon: {
-        width: 60,
-        height: 60,
-        borderRadius: 15,
-        marginBottom: 5,
+        width: 70,
+        height: 70,
+        borderRadius: 20,
+    },
+    categoryIconOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(175, 249, 204, 0.1)',
+        borderRadius: 20,
     },
     categoryText: {
-        fontSize: 12,
+        fontSize: 13,
         textAlign: 'center',
-        fontWeight: '500',
+        fontWeight: '600',
+        color: '#333',
     },
     noCategoriesContainer: {
-        padding: 20,
+        padding: 30,
         alignItems: 'center',
     },
     noCategoriesText: {
         color: '#999',
-        fontSize: 14,
+        fontSize: 16,
+        fontWeight: '500',
     },
     banner: {
-        margin: 15,
+        margin: 20,
         backgroundColor: '#E6F9EC',
-        borderRadius: 20,
-        padding: 15,
+        borderRadius: 25,
+        padding: 20,
         position: 'relative',
+        overflow: 'hidden',
+        minHeight: 120,
+    },
+    bannerContent: {
+        zIndex: 2,
     },
     bannerTitle: {
-        fontWeight: 'bold',
-        fontSize: 16,
-        color: '#000',
-        marginBottom: 10,
+        fontWeight: '700',
+        fontSize: 18,
+        color: '#333',
+        marginBottom: 15,
+        lineHeight: 24,
     },
     shopNowBtn: {
         backgroundColor: '#00C851',
-        paddingVertical: 8,
-        paddingHorizontal: 15,
-        borderRadius: 10,
+        paddingVertical: 10,
+        paddingHorizontal: 18,
+        borderRadius: 15,
         alignSelf: 'flex-start',
+        flexDirection: 'row',
+        alignItems: 'center',
+        shadowColor: '#00C851',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 6,
     },
     shopNowText: {
         color: '#fff',
-        fontWeight: 'bold'
+        fontWeight: '700',
+        marginRight: 6,
     },
     bannerImage: {
         position: 'absolute',
-        right: 10,
+        right: 15,
         bottom: 0,
-        width: 100,
-        height: 100,
+        width: 110,
+        height: 110,
         resizeMode: 'contain',
+        zIndex: 1,
+    },
+    shimmerOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(255, 255, 255, 0.3)',
+        width: 100,
     },
     dealsContainer: {
-        paddingLeft: 15,
-        paddingBottom: 10,
+        paddingLeft: 20,
+        paddingBottom: 15,
     },
     dealCard: {
-        width: 260,
-        marginRight: 12,
-        borderRadius: 12,
+        width: 280,
+        marginRight: 15,
+        borderRadius: 20,
         backgroundColor: '#fff',
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.15,
+        shadowRadius: 10,
+        elevation: 8,
         overflow: 'hidden',
-        borderWidth: 0.5,
-        borderColor: '#f0f0f0',
-    },
-    dealBadge: {
-        position: 'absolute',
-        top: 8,
-        right: 8,
-        backgroundColor: '#FF5722',
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 12,
-    },
-    dealBadgeText: {
-        color: '#fff',
-        fontSize: 10,
-        fontWeight: 'bold',
     },
     dealImageContainer: {
-        height: 100,
+        height: 120,
         width: '100%',
         position: 'relative',
     },
@@ -437,59 +660,63 @@ const styles = StyleSheet.create({
         width: '100%',
         height: '100%',
     },
-    dealOverlay: {
+    gradientOverlay: {
         position: 'absolute',
-        bottom: 10,
-        left: 15,
+        bottom: 0,
+        left: 0,
+        right: 0,
+        height: 40,
+        backgroundColor: 'rgba(0,0,0,0.1)',
+    },
+    dealBadge: {
+        position: 'absolute',
+        top: 12,
+        right: 12,
+        backgroundColor: '#FF5722',
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 15,
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(255, 255, 255, 0.9)',
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 12,
+        shadowColor: '#FF5722',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+        elevation: 4,
     },
-    dealLabel: {
-        fontSize: 10,
-        fontWeight: 'bold',
-        color: '#FF5722',
+    dealBadgeText: {
+        color: '#fff',
+        fontSize: 11,
+        fontWeight: '700',
+    },
+    sparkle: {
         marginLeft: 4,
     },
+    sparkleText: {
+        fontSize: 10,
+    },
     dealInfo: {
-        padding: 10,
+        padding: 15,
     },
     dealTitle: {
-        fontSize: 13,
-        fontWeight: '600',
+        fontSize: 16,
+        fontWeight: '700',
         color: '#333',
-        marginBottom: 6,
-    },
-    dealDescription: {
-        fontSize: 11,
-        color: '#666',
         marginBottom: 8,
-    },
-    productName: {
-        fontSize: 12,
-        color: '#888',
-        fontStyle: 'italic',
-        marginBottom: 12,
-    },
-    priceSection: {
-        marginBottom: 12,
     },
     priceRow: {
         flexDirection: 'row',
         alignItems: 'baseline',
-        marginBottom: 6,
+        marginBottom: 10,
     },
     currentPrice: {
-        fontSize: 16,
-        fontWeight: 'bold',
+        fontSize: 20,
+        fontWeight: '800',
         color: '#00C851',
-        marginRight: 6,
+        marginRight: 8,
     },
     originalPrice: {
-        fontSize: 12,
+        fontSize: 14,
         color: '#999',
         textDecorationLine: 'line-through',
     },
@@ -497,54 +724,66 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
+        marginBottom: 12,
     },
     savingsPill: {
         backgroundColor: '#FFF0E5',
-        borderRadius: 10,
-        paddingHorizontal: 6,
-        paddingVertical: 3,
+        borderRadius: 12,
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        flexDirection: 'row',
+        alignItems: 'center',
     },
     savingsText: {
-        fontSize: 10,
+        fontSize: 11,
         color: '#FF5722',
-        fontWeight: '600',
+        fontWeight: '700',
+        marginLeft: 4,
     },
     timerContainer: {
         flexDirection: 'row',
         alignItems: 'center',
     },
     timerText: {
-        fontSize: 10,
+        fontSize: 11,
         color: '#FF5722',
-        marginLeft: 2,
-        fontWeight: '500',
+        marginLeft: 4,
+        fontWeight: '600',
     },
     dealActionBtn: {
         backgroundColor: '#00C851',
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        paddingVertical: 12,
-        borderRadius: 15,
+        paddingVertical: 10,
+        borderRadius: 12,
+        shadowColor: '#00C851',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+        elevation: 4,
     },
     dealActionText: {
         color: '#fff',
-        fontWeight: 'bold',
+        fontWeight: '700',
         fontSize: 14,
-        marginRight: 8,
+        marginRight: 6,
     },
     noDealsContainer: {
         alignItems: 'center',
         justifyContent: 'center',
-        padding: 40,
-
+        padding: 50,
     },
     noDealsText: {
         fontSize: 16,
         color: '#999',
-        marginTop: 10,
+        marginTop: 15,
         textAlign: 'center',
+        fontWeight: '500',
+    },
+    bottomSpacing: {
+        height: 30,
     },
 });
 
-export default Home;
+export default Home;    

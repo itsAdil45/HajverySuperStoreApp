@@ -46,7 +46,7 @@ const MainCategoriesScreen = ({ navigation }) => {
     const renderCategory = ({ item }) => (
         <TouchableOpacity
             style={styles.categoryCard}
-            onPress={() => navigation.navigate("CategoryProducts", { mainCategoryID: item._id })}
+            onPress={() => navigation.navigate("Products", { mainCategoryID: item._id })}
         >
             <Image source={{ uri: item.icon }} style={styles.categoryImage} />
             <Text style={styles.categoryName}>{item.name}</Text>
@@ -72,10 +72,10 @@ const MainCategoriesScreen = ({ navigation }) => {
         return (
             <View style={styles.container}>
                 <View style={styles.header}>
-                    <TouchableOpacity onPress={() => navigation.goBack()}>
+                    {/* <TouchableOpacity onPress={() => navigation.goBack()}>
                         <Feather name="chevron-left" size={24} color="#000" />
-                    </TouchableOpacity>
-                    <Text style={styles.headerTitle}>All Categories</Text>
+                    </TouchableOpacity> */}
+                    {/* <Text style={styles.headerTitle}>All Categories</Text> */}
                     <View style={{ width: 24 }} />
                 </View>
                 <View style={styles.loadingContainer}>
@@ -110,13 +110,13 @@ const MainCategoriesScreen = ({ navigation }) => {
     return (
         <View style={styles.container}>
             {/* Header */}
-            <View style={styles.header}>
+            {/* <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()}>
                     <Feather name="chevron-left" size={24} color="#000" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>All Categories</Text>
                 <View style={{ width: 24 }} />
-            </View>
+            </View> */}
 
             {/* Search Bar */}
             <View style={styles.searchContainer}>

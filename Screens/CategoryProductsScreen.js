@@ -1,8 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, TouchableOpacity, Image, ActivityIndicator, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import useGet from '../hooks/useGet';
-
 
 const CategoryProductsScreen = ({ navigation, route }) => {
     const { mainCategoryID } = route.params || {};
@@ -13,13 +13,16 @@ const CategoryProductsScreen = ({ navigation, route }) => {
     const [subcategories, setSubcategories] = useState([]);
     const [selectedSubcat, setSelectedSubcat] = useState('');
 
-    // Fetch products using useGet hook
+    // Only fetch products when selectedSubcat is set
     const {
         data: productsData,
         loading: productsLoading,
         error: productsError,
         refetch: refetchProducts
-    } = useGet(`/products?category=${encodeURIComponent(selectedSubcat)}`);
+    } = useGet(
+        selectedSubcat ? `/products?category=${encodeURIComponent(selectedSubcat)}` : null,
+        false // Don't run on mount
+    );
 
     useEffect(() => {
         if (data && data.subCategories) {
@@ -31,6 +34,13 @@ const CategoryProductsScreen = ({ navigation, route }) => {
             }
         }
     }, [data]);
+
+    // Fetch products when selectedSubcat changes
+    useEffect(() => {
+        if (selectedSubcat) {
+            refetchProducts();
+        }
+    }, [selectedSubcat]);
 
     const getPriceDisplay = (product) => {
         if (product.variants && product.variants.length > 0) {
@@ -59,7 +69,7 @@ const CategoryProductsScreen = ({ navigation, route }) => {
             const maxPrice = Math.max(...prices);
 
             if (minPrice === maxPrice) {
-                return `$${minPrice}`;
+                return `Rs${minPrice}`;
             }
             return `Rs${minPrice}-Rs${maxPrice}`;
         }
@@ -100,9 +110,9 @@ const CategoryProductsScreen = ({ navigation, route }) => {
                     {getPriceDisplay(item)}
                 </Text>
             </View>
-            <TouchableOpacity style={styles.addButton}>
-                <Text style={styles.addText}>Add</Text>
-            </TouchableOpacity>
+            {/* <View style={styles.addButton}>
+                <Text style={styles.addText}>View</Text>
+            </View> */}
         </TouchableOpacity>
     );
 
@@ -111,11 +121,11 @@ const CategoryProductsScreen = ({ navigation, route }) => {
         return (
             <View style={styles.container}>
                 <View style={styles.header}>
-                    <TouchableOpacity onPress={() => navigation.goBack()}>
+                    {/* <TouchableOpacity onPress={() => navigation.goBack()}>
                         <Feather name="chevron-left" size={24} />
-                    </TouchableOpacity>
+                    </TouchableOpacity> */}
                     <Text style={styles.headerTitle}>Loading...</Text>
-                    <Feather name="search" size={20} />
+                    <Feather name="loader" size={20} />
                 </View>
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color="#0000ff" />
@@ -149,13 +159,13 @@ const CategoryProductsScreen = ({ navigation, route }) => {
     return (
         <View style={styles.container}>
             {/* Header */}
-            <View style={styles.header}>
+            {/* <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()}>
                     <Feather name="chevron-left" size={24} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Categories</Text>
                 <Feather name="search" size={20} />
-            </View>
+            </View> */}
 
             <View style={styles.body}>
                 {/* Left Subcategory List */}
@@ -192,7 +202,11 @@ const CategoryProductsScreen = ({ navigation, route }) => {
 
                 {/* Right Product Grid */}
                 <View style={{ flex: 1 }}>
-                    {productsLoading ? (
+                    {!selectedSubcat ? (
+                        <View style={styles.emptyProductContainer}>
+                            <Text style={styles.emptyText}>Select a subcategory to view products</Text>
+                        </View>
+                    ) : productsLoading ? (
                         <View style={styles.loadingContainer}>
                             <ActivityIndicator size="large" color="#0000ff" />
                             <Text style={styles.loadingText}>Loading products...</Text>
@@ -216,7 +230,7 @@ const CategoryProductsScreen = ({ navigation, route }) => {
                             ListEmptyComponent={
                                 <View style={styles.emptyProductContainer}>
                                     <Text style={styles.emptyText}>
-                                        {selectedSubcat ? `No items in ${selectedSubcat}` : 'Select a subcategory to view products'}
+                                        No items in {selectedSubcat}
                                     </Text>
                                 </View>
                             }
@@ -227,7 +241,6 @@ const CategoryProductsScreen = ({ navigation, route }) => {
         </View>
     );
 };
-
 
 const styles = StyleSheet.create({
     container: {
@@ -418,10 +431,10 @@ const styles = StyleSheet.create({
     },
     card: {
         backgroundColor: '#fff',
-        width: '48%',
+        width: '50%',
         marginBottom: 15,
         borderRadius: 12,
-        padding: 10,
+        padding: 8,
         elevation: 1,
     },
     image: {
@@ -522,5 +535,6 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
 });
+
 
 export default CategoryProductsScreen;

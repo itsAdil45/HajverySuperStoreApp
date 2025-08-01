@@ -391,29 +391,47 @@ export default function PaymentScreen({ navigation, route }) {
                 </View>
 
                 {/* Order Summary */}
+                {/* Order Summary */}
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Order Summary</Text>
                     <View style={styles.summaryCard}>
-                        <View style={styles.summaryRow}>
-                            <Text style={styles.summaryLabel}>Subtotal:</Text>
-                            <Text style={styles.summaryValue}>Rs{parseFloat(total).toFixed(2)}</Text>
+                        {/* Header with icon */}
+                        <View style={styles.summaryHeader}>
+                            <Ionicons name="receipt-outline" size={20} color="#53B175" />
+                            <Text style={styles.summaryHeaderText}>Order Details</Text>
                         </View>
-                        <View style={styles.summaryRow}>
-                            <Text style={styles.summaryLabel}>Delivery:</Text>
-                            <Text style={styles.summaryValue}>Rs{charges.delivery.toFixed(2)}</Text>
-                        </View>
-                        <View style={styles.summaryRow}>
-                            <Text style={styles.summaryLabel}>VAT (5%):</Text>
-                            <Text style={styles.summaryValue}>Rs{charges.vat.toFixed(2)}</Text>
-                        </View>
-                        {charges.other > 0 && (
+
+                        {/* Items divider */}
+                        <View style={styles.summaryDivider} />
+
+                        {/* Summary rows */}
+                        <View style={styles.summaryContent}>
                             <View style={styles.summaryRow}>
-                                <Text style={styles.summaryLabel}>Other charges:</Text>
-                                <Text style={styles.summaryValue}>Rs{charges.other.toFixed(2)}</Text>
+                                <Text style={styles.summaryLabel}>Subtotal:</Text>
+                                <Text style={styles.summaryValue}>Rs{parseFloat(total).toFixed(2)}</Text>
                             </View>
-                        )}
+                            <View style={styles.summaryRow}>
+                                <Text style={styles.summaryLabel}>Delivery Fee:</Text>
+                                <Text style={styles.summaryValue}>Rs{charges.delivery.toFixed(2)}</Text>
+                            </View>
+                            <View style={styles.summaryRow}>
+                                <Text style={styles.summaryLabel}>VAT (5%):</Text>
+                                <Text style={styles.summaryValue}>Rs{charges.vat.toFixed(2)}</Text>
+                            </View>
+                            {charges.other > 0 && (
+                                <View style={styles.summaryRow}>
+                                    <Text style={styles.summaryLabel}>Other charges:</Text>
+                                    <Text style={styles.summaryValue}>Rs{charges.other.toFixed(2)}</Text>
+                                </View>
+                            )}
+                        </View>
+
+                        {/* Total divider */}
+                        <View style={[styles.summaryDivider, styles.totalDivider]} />
+
+                        {/* Total row */}
                         <View style={[styles.summaryRow, styles.totalRow]}>
-                            <Text style={styles.totalLabel}>Total:</Text>
+                            <Text style={styles.totalLabel}>Total Amount:</Text>
                             <Text style={styles.totalAmount}>Rs{finalTotal.toFixed(2)}</Text>
                         </View>
                     </View>
@@ -899,5 +917,67 @@ const styles = StyleSheet.create({
     },
     disabledBtn: {
         opacity: 0.7,
+    },
+    summaryCard: {
+        backgroundColor: '#fff',
+        borderRadius: 16,
+        padding: 0,
+        elevation: 2,
+        overflow: 'hidden',
+    },
+    summaryHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 16,
+        backgroundColor: '#FAFAFA',
+        borderBottomWidth: 1,
+        borderBottomColor: '#F0F0F0',
+    },
+    summaryHeaderText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#53B175',
+        marginLeft: 8,
+    },
+    summaryContent: {
+        padding: 16,
+    },
+    summaryRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 12,
+    },
+    summaryLabel: {
+        fontSize: 14,
+        color: '#666',
+    },
+    summaryValue: {
+        fontSize: 14,
+        color: '#333',
+        fontWeight: '500',
+    },
+    summaryDivider: {
+        height: 1,
+        backgroundColor: '#F0F0F0',
+        marginHorizontal: 16,
+    },
+    totalDivider: {
+        backgroundColor: '#E0E0E0',
+        marginBottom: 12,
+    },
+    totalRow: {
+        paddingHorizontal: 16,
+        paddingBottom: 16,
+        marginBottom: 0,
+    },
+    totalLabel: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#333',
+    },
+    totalAmount: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#53B175',
     },
 });

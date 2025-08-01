@@ -170,21 +170,7 @@ export default function CheckoutScreen() {
                                 </Text>
                             </View>
 
-                            <View style={styles.qtyRow}>
-                                <TouchableOpacity
-                                    onPress={() => updateQuantity(item._id, item.quantity - 1)}
-                                    disabled={patchLoading || deleteLoading}
-                                >
-                                    <Text style={styles.qtyBtn}>-</Text>
-                                </TouchableOpacity>
-                                <Text style={styles.qtyText}>{item.quantity}</Text>
-                                <TouchableOpacity
-                                    onPress={() => updateQuantity(item._id, item.quantity + 1)}
-                                    disabled={patchLoading || deleteLoading}
-                                >
-                                    <Text style={styles.qtyBtn}>+</Text>
-                                </TouchableOpacity>
-                            </View>
+
                         </View>
                     </View>
                 </View>
@@ -355,7 +341,7 @@ export default function CheckoutScreen() {
 
                 <View style={styles.summaryRow}>
                     <Text style={styles.summaryText}>Delivery:</Text>
-                    <Text style={{ color: 'green' }}>Free</Text>
+                    <Text style={{ color: 'green' }}>Rs 50</Text>
                 </View>
 
                 <Text style={styles.summaryTotal}>
@@ -391,8 +377,8 @@ const styles = {
         marginBottom: 15,
     },
     cartImage: {
-        width: 60,
-        height: 60,
+        width: 100,
+        height: 100,
         borderRadius: 8,
         marginRight: 15,
     },
