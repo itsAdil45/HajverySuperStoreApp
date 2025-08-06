@@ -13,6 +13,7 @@ import {
 import OtpModal from '../Modals/OtpModal';
 import usePost from '../hooks/usePost';
 import { Eye, EyeOff } from 'lucide-react-native';
+import appColors from '../colors/appColors';
 
 const UserAuthScreen = ({ route, navigation }) => {
     const { post, loading, error } = usePost();
@@ -214,6 +215,7 @@ const UserAuthScreen = ({ route, navigation }) => {
                 keyboardType="email-address"
                 autoCapitalize="none"
                 onChangeText={setEmail}
+                placeholderTextColor={"#777"}
             />
 
             {renderPasswordResetFields()}
@@ -342,7 +344,7 @@ const styles = StyleSheet.create({
         letterSpacing: 2,
     },
     loginButton: {
-        backgroundColor: '#4CAF50',
+        backgroundColor: appColors.Primary_Button,
         paddingVertical: 14,
         borderRadius: 12,
         alignItems: 'center',
@@ -357,7 +359,7 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
     successMessage: {
-        color: '#4CAF50',
+        color: appColors.Hover_Button,
         fontSize: 14,
         textAlign: 'center',
         marginBottom: 16,

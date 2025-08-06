@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import useGet from '../hooks/useGet';
+import appColors from '../colors/appColors';
 
 const MainCategoriesScreen = ({ navigation }) => {
     const [searchQuery, setSearchQuery] = useState('');
@@ -79,7 +80,7 @@ const MainCategoriesScreen = ({ navigation }) => {
                     <View style={{ width: 24 }} />
                 </View>
                 <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color="#007bff" />
+                    <ActivityIndicator size="large" color={appColors.darkerBg} />
                     <Text style={styles.loadingText}>Loading categories...</Text>
                 </View>
             </View>
@@ -124,6 +125,7 @@ const MainCategoriesScreen = ({ navigation }) => {
                     <Feather name="search" size={18} color="#aaa" />
                     <TextInput
                         placeholder="Search categories..."
+                        placeholderTextColor={"#aaa"}
                         style={styles.searchInput}
                         value={searchQuery}
                         onChangeText={handleSearch}
@@ -212,7 +214,7 @@ const styles = StyleSheet.create({
         color: '#000',
     },
     searchButton: {
-        backgroundColor: '#007bff',
+        backgroundColor: appColors.Primary_Button,
         borderRadius: 12,
         paddingHorizontal: 16,
         paddingVertical: 12,

@@ -5,6 +5,7 @@ import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { Linking, Platform } from 'react-native';
+import appColors from '../colors/appColors';
 
 export default function LocationPickerScreen({ navigation, route }) {
     const [location, setLocation] = useState(null);
@@ -50,7 +51,7 @@ export default function LocationPickerScreen({ navigation, route }) {
             const result = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lon });
             if (result.length > 0) {
                 const a = result[0];
-                setAddress(`${a.formattedAddress || ''} + Longitude:${lon || ''} + Latitude:${lat || ''}`);
+                setAddress(`${a.formattedAddress || ''} / Longitude:${lon || ''} / Latitude:${lat || ''}`);
             }
         } catch (error) {
             console.warn('Reverse geocoding failed:', error);
@@ -234,7 +235,7 @@ const styles = StyleSheet.create({
         position: 'absolute',
         bottom: 30,
         alignSelf: 'center',
-        backgroundColor: '#22c55e',
+        backgroundColor: appColors.Primary_Button,
         paddingVertical: 14,
         paddingHorizontal: 30,
         borderRadius: 10,

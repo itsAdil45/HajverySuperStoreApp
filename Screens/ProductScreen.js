@@ -21,6 +21,7 @@ import Animated, {
 import { PinchGestureHandler } from 'react-native-gesture-handler';
 import useGet from '../hooks/useGet';
 import usePost from '../hooks/usePost';
+import appColors from '../colors/appColors';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -212,16 +213,8 @@ const ProductScreen = ({ route, navigation }) => {
     if (loading) {
         return (
             <View style={styles.container}>
-                <View style={styles.header}>
-                    <View style={styles.headerLeft}>
-                        <TouchableOpacity onPress={() => navigation.goBack()}>
-                            <Feather name="chevron-left" size={24} color="#333" />
-                        </TouchableOpacity>
-                        <Text style={styles.headerTitle}>Loading...</Text>
-                    </View>
-                </View>
                 <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color="#00C851" />
+                    <ActivityIndicator size="large" color={appColors.darkerBg} />
                     <Text style={styles.loadingText}>Loading product details...</Text>
                 </View>
             </View>
@@ -272,7 +265,7 @@ const ProductScreen = ({ route, navigation }) => {
     return (
         <View style={styles.container}>
             {/* Header */}
-            <View style={styles.header}>
+            {/* <View style={styles.header}>
                 <View style={styles.headerLeft}>
                     <TouchableOpacity onPress={() => navigation.goBack()}>
                         <Feather name="chevron-left" size={24} color="#333" />
@@ -286,7 +279,7 @@ const ProductScreen = ({ route, navigation }) => {
                         color={isFavorite ? '#ff4757' : '#333'}
                     />
                 </TouchableOpacity>
-            </View>
+            </View> */}
 
             <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
                 {/* Product Image */}
@@ -344,7 +337,7 @@ const ProductScreen = ({ route, navigation }) => {
                         <Text
                             style={[
                                 styles.stockStatus,
-                                { color: isInStock() ? '#00C851' : '#ff4757' },
+                                { color: isInStock() ? appColors.darkerBg : '#ff4757' },
                             ]}
                         >
                             {isInStock() ? `In Stock (${getStock()})` : 'Out of Stock'}
@@ -588,7 +581,7 @@ const styles = StyleSheet.create({
         marginBottom: 20,
     },
     retryBtn: {
-        backgroundColor: '#00C851',
+        backgroundColor: appColors.Primary_Button,
         paddingHorizontal: 20,
         paddingVertical: 10,
         borderRadius: 8,
@@ -628,7 +621,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#ddd',
         marginHorizontal: 4,
     },
-    activeIndicator: { backgroundColor: '#00C851' },
+    activeIndicator: { backgroundColor: appColors.darkerBg },
     saleTag: {
         position: 'absolute',
         top: 16,
@@ -653,7 +646,7 @@ const styles = StyleSheet.create({
     priceRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
     priceRange: { fontSize: 14, color: '#666', marginBottom: 12, fontStyle: 'italic' },
     mrp: { color: '#999', textDecorationLine: 'line-through', fontSize: 16, marginRight: 12 },
-    price: { fontSize: 24, fontWeight: 'bold', color: '#00C851', marginRight: 12 },
+    price: { fontSize: 24, fontWeight: 'bold', color: appColors.Hover_Button, marginRight: 12 },
     discountBadge: {
         backgroundColor: '#ff4757',
         paddingHorizontal: 8,
@@ -672,7 +665,7 @@ const styles = StyleSheet.create({
         minWidth: 80,
         alignItems: 'center',
     },
-    selectedVariant: { borderColor: '#00C851', backgroundColor: '#00C851' },
+    selectedVariant: { borderColor: appColors.Primary_Button, backgroundColor: appColors.Primary_Button },
     outOfStockVariant: { borderColor: '#ccc', backgroundColor: '#f8f8f8' },
     variantText: { fontSize: 14, fontWeight: '600', color: '#333' },
     selectedVariantText: { color: '#fff' },
@@ -724,9 +717,9 @@ const styles = StyleSheet.create({
         marginBottom: 12,
     },
     totalLabel: { fontSize: 16, color: '#666' },
-    totalAmount: { fontSize: 20, fontWeight: 'bold', color: '#00C851' },
+    totalAmount: { fontSize: 20, fontWeight: 'bold', color: appColors.Hover_Button },
     cartBtn: {
-        backgroundColor: '#00C851',
+        backgroundColor: appColors.darkerBg,
         padding: 16,
         borderRadius: 12,
         alignItems: 'center',

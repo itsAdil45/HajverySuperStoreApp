@@ -17,6 +17,7 @@ import * as Device from 'expo-device';
 import OtpModal from '../Modals/OtpModal';
 import ConfirmationModal from '../Modals/ConfirmationModal';
 import usePost from '../hooks/usePost';
+import appColors from '../colors/appColors';
 
 Notifications.setNotificationHandler({
     handleNotification: async () => ({
@@ -242,9 +243,6 @@ const SignupScreen = ({ navigation, route }) => {
                                     style={styles.eyeButton}
                                     activeOpacity={0.7}
                                 >
-                                    <Text style={styles.eyeIcon}>
-                                        {hidePassword ? '👁️' : '🙈'}
-                                    </Text>
                                 </TouchableOpacity>
                             </View>
                         </View>
@@ -260,9 +258,8 @@ const SignupScreen = ({ navigation, route }) => {
                                     styles.addressText,
                                     !address && styles.addressPlaceholder
                                 ]}>
-                                    {(address?.split('+')[0].trim()) || 'Select your address'}
+                                    {(address?.split('/')[0].trim()) || 'Select your address'}
                                 </Text>
-                                <Text style={styles.locationIcon}>📍</Text>
                             </TouchableOpacity>
                         </View>
 
@@ -460,18 +457,18 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     termsLink: {
-        color: '#4CAF50',
+        color: appColors.darkerBg,
         fontWeight: '600',
     },
     signupButton: {
-        backgroundColor: '#4CAF50',
+        backgroundColor: appColors.Primary_Button,
         borderRadius: 8,
         padding: 16, // Increased padding
         alignItems: 'center',
         marginBottom: 20, // Increased spacing
         minHeight: 48,
         justifyContent: 'center',
-        shadowColor: '#4CAF50',
+        shadowColor: appColors.darkerBg,
         shadowOffset: {
             width: 0,
             height: 2,
@@ -501,7 +498,7 @@ const styles = StyleSheet.create({
     },
     loginLink: {
         fontSize: 14,
-        color: '#4CAF50',
+        color: appColors.darkerBg,
         fontWeight: '600',
     },
 });

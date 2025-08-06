@@ -36,7 +36,7 @@ import EditProfileScreen from './Screens/EditProfileScreen';
 import MainCategoriesScreen from './Screens/MainCategoriesScreen';
 import SearchResultScreen from './Screens/SearchResultScreen';
 import DealDetails from './Screens/DealDetails';
-
+import appColors from './colors/appColors';
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 const Drawer = createDrawerNavigator();
@@ -317,10 +317,10 @@ const MainTabNavigator = ({ navigation }) => {
                     shadowOpacity: 0.1,
                     shadowRadius: 3,
                 },
-                tabBarActiveTintColor: 'green',
+                tabBarActiveTintColor: appColors.Primary_Button,
                 tabBarInactiveTintColor: '#8E8E93',
                 tabBarLabelStyle: {
-                    fontSize: 12,
+                    fontSize: 10,
                     fontWeight: '500',
                 },
             })}
@@ -333,7 +333,7 @@ const MainTabNavigator = ({ navigation }) => {
                     tabBarIcon: ({ color, size, focused }) => (
                         <AnimatedTabIcon
                             name="home"
-                            size={size}
+                            size={20}
                             color={color}
                             focused={focused}
                         />
@@ -348,7 +348,7 @@ const MainTabNavigator = ({ navigation }) => {
                     tabBarIcon: ({ color, size, focused }) => (
                         <AnimatedTabIcon
                             name="shopping-cart"
-                            size={size}
+                            size={20}
                             color={color}
                             focused={focused}
                         />
@@ -364,7 +364,7 @@ const MainTabNavigator = ({ navigation }) => {
                     tabBarIcon: ({ color, size, focused }) => (
                         <AnimatedTabIcon
                             name="package"
-                            size={size}
+                            size={20}
                             color={color}
                             focused={focused}
                         />
@@ -379,7 +379,7 @@ const MainTabNavigator = ({ navigation }) => {
                     tabBarIcon: ({ color, size, focused }) => (
                         <AnimatedTabIcon
                             name="grid"
-                            size={size}
+                            size={20}
                             color={color}
                             focused={focused}
                         />
@@ -476,7 +476,7 @@ const MainStackNavigator = () => {
                 name="Product"
                 component={ProductScreen}
                 options={{
-                    headerShown: true,
+                    headerShown: false,
                     ...scaleTransition,
                 }}
             />

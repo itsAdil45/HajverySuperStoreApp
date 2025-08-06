@@ -7,6 +7,7 @@ import Animated, {
     withDelay,
     withSpring,
 } from 'react-native-reanimated';
+import appColors from '../colors/appColors';
 
 const { width, height } = Dimensions.get('window');
 
@@ -110,7 +111,7 @@ const OnboardingItem = ({ image, title, description, onNext, onSkip, showSkip })
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F1FFF2',
+        backgroundColor: appColors.lightBg,
         alignItems: 'center',
     },
     decorativeCircle1: {
@@ -118,7 +119,7 @@ const styles = StyleSheet.create({
         width: 120,
         height: 120,
         borderRadius: 60,
-        backgroundColor: '#00C851',
+        backgroundColor: appColors.Primary_Button,
         opacity: 0.06,
         top: height * 0.1,
         left: -40,
@@ -128,7 +129,7 @@ const styles = StyleSheet.create({
         width: 80,
         height: 80,
         borderRadius: 40,
-        backgroundColor: '#4CAF50',
+        backgroundColor: appColors.Primary_Button,
         opacity: 0.08,
         top: height * 0.2,
         right: -20,
@@ -144,7 +145,7 @@ const styles = StyleSheet.create({
         borderRadius: 20,
     },
     skipText: {
-        color: '#00C851',
+        color: appColors.Primary_Button,
         fontWeight: '600',
         fontSize: 16,
     },
@@ -158,7 +159,7 @@ const styles = StyleSheet.create({
         width: 280,
         height: 280,
         borderRadius: 140,
-        backgroundColor: '#00C851',
+        backgroundColor: appColors.darkerBg,
         opacity: 0.08,
         top: 15,
     },
@@ -205,14 +206,14 @@ const styles = StyleSheet.create({
         marginBottom: 30,
     },
     button: {
-        backgroundColor: '#00C851',
+        backgroundColor: appColors.Primary_Button,
         paddingHorizontal: 48,
         paddingVertical: 16,
         borderRadius: 25,
         alignItems: 'center',
         justifyContent: 'center',
         // Simple shadow
-        shadowColor: '#00C851',
+        shadowColor: appColors.darkerBg,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.2,
         shadowRadius: 8,

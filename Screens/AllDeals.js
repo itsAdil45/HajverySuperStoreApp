@@ -16,6 +16,7 @@ import {
 import { MaterialIcons, Feather, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import useGet from '../hooks/useGet'; // Adjust import path as needed
+import appColors from '../colors/appColors';
 
 const { width, height } = Dimensions.get('window');
 
@@ -98,7 +99,7 @@ const AllDeals = ({ navigation }) => {
 
                         {/* Discount Badge */}
                         <LinearGradient
-                            colors={['#FF6B35', '#FF8E53']}
+                            colors={[appColors.Primary_Button, appColors.Hover_Button]}
                             style={styles.discountBadge}
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 1 }}
@@ -151,7 +152,7 @@ const AllDeals = ({ navigation }) => {
                                 <Text style={styles.originalPrice}>{formatPrice(item.originalPrice)}</Text>
                             </View>
                             <View style={styles.savingsChip}>
-                                <Ionicons name="trending-down" size={12} color="#00C851" />
+                                <Ionicons name="trending-down" size={12} color={appColors.darkerBg} />
                                 <Text style={styles.savingsAmount}>Save {savings.savings}</Text>
                             </View>
                         </View>
@@ -166,7 +167,7 @@ const AllDeals = ({ navigation }) => {
                             </View>
                             <TouchableOpacity style={styles.viewButton}>
                                 <Text style={styles.viewButtonText}>View Deal</Text>
-                                <Ionicons name="arrow-forward" size={14} color="#00C851" />
+                                <Ionicons name="arrow-forward" size={14} color={appColors.darkerBg} />
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -178,7 +179,7 @@ const AllDeals = ({ navigation }) => {
     const renderHeader = () => (
         <View style={styles.headerContainer}>
             <LinearGradient
-                colors={['#00C851', '#00A843']}
+                colors={[appColors.darkerBg, appColors.Primary_Button]}
                 style={styles.headerGradient}
             >
                 <View style={styles.headerContent}>
@@ -208,7 +209,7 @@ const AllDeals = ({ navigation }) => {
         return (
             <View style={styles.loadingContainer}>
                 <View style={styles.loadingContent}>
-                    <ActivityIndicator size="large" color="#00C851" />
+                    <ActivityIndicator size="large" color={appColors.darkerBg} />
                     <Text style={styles.loadingText}>Discovering amazing deals...</Text>
                     <Text style={styles.loadingSubtext}>This won't take long!</Text>
                 </View>
@@ -503,7 +504,7 @@ const styles = StyleSheet.create({
     dealPrice: {
         fontSize: 28,
         fontWeight: 'bold',
-        color: '#00C851',
+        color: appColors.Primary_Button,
         marginRight: 12,
     },
     originalPrice: {
@@ -514,15 +515,16 @@ const styles = StyleSheet.create({
     savingsChip: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#F0FDF4',
+        backgroundColor: appColors.lightBg,
         paddingHorizontal: 10,
         paddingVertical: 4,
         borderRadius: 12,
         alignSelf: 'flex-start',
+        borderRadius: 10
     },
     savingsAmount: {
         fontSize: 12,
-        color: '#00C851',
+        color: appColors.Hover_Button,
         fontWeight: '600',
         marginLeft: 4,
     },
@@ -553,7 +555,7 @@ const styles = StyleSheet.create({
     },
     viewButtonText: {
         fontSize: 13,
-        color: '#00C851',
+        color: appColors.Primary_Button,
         fontWeight: '600',
         marginRight: 4,
     },

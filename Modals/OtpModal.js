@@ -7,6 +7,7 @@ import {
     StyleSheet,
     TextInput,
 } from 'react-native';
+import appColors from '../colors/appColors';
 
 const OtpModal = ({ visible, email, onVerify, onResend }) => {
     const [otp, setOtp] = useState(['', '', '', '']);
@@ -120,7 +121,7 @@ const styles = StyleSheet.create({
         marginHorizontal: 5,
     },
     verifyButton: {
-        backgroundColor: '#4CAF50',
+        backgroundColor: appColors.Primary_Button,
         borderRadius: 8,
         paddingVertical: 12,
         paddingHorizontal: 50,

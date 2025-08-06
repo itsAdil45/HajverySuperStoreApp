@@ -17,6 +17,7 @@ import usePost from '../hooks/usePost';
 import usePatch from '../hooks/usePatch';
 import useDelete from '../hooks/useDelete';
 import axios from 'axios';
+import appColors from '../colors/appColors';
 
 const baseUrl = 'https://hajverystorebackend.onrender.com/api';
 
@@ -255,7 +256,7 @@ export default function CheckoutScreen() {
     if (cartLoading) {
         return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                <ActivityIndicator size="large" color="#53B175" />
+                <ActivityIndicator size="large" color={appColors.darkerBg} />
                 <Text>Loading cart...</Text>
             </View>
         );
@@ -299,7 +300,7 @@ export default function CheckoutScreen() {
             {/* Recommendation Section */}
             <Text style={styles.subheading}>Before you Checkout</Text>
             {loadingRecommendations ? (
-                <ActivityIndicator size="small" color="#53B175" style={{ margin: 20 }} />
+                <ActivityIndicator size="small" color={appColors.darkerBg} style={{ margin: 20 }} />
             ) : (
                 <FlatList
                     horizontal
@@ -390,7 +391,7 @@ const styles = {
     cartPrice: {
         fontSize: 16,
         fontWeight: 'bold',
-        color: '#53B175',
+        color: appColors.darkerBg,
     },
     oldPrice: {
         fontSize: 14,
@@ -512,7 +513,7 @@ const styles = {
     recommendPrice: {
         fontSize: 14,
         fontWeight: 'bold',
-        color: '#53B175',
+        color: appColors.darkerBg,
         marginRight: 8,
     },
     recommendOldPrice: {
@@ -521,7 +522,7 @@ const styles = {
         color: '#999',
     },
     addBtn: {
-        backgroundColor: '#53B175',
+        backgroundColor: appColors.Primary_Button,
         paddingVertical: 10,
         borderRadius: 5,
         alignItems: 'center',
@@ -574,7 +575,7 @@ const styles = {
         borderTopColor: '#ddd',
     },
     checkoutBtn: {
-        backgroundColor: '#53B175',
+        backgroundColor: appColors.Primary_Button,
         paddingVertical: 15,
         borderRadius: 10,
         alignItems: 'center',

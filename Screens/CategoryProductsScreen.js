@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, TouchableOpacity, Image, ActivityIndicator, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import useGet from '../hooks/useGet';
+import appColors from '../colors/appColors';
 
 const CategoryProductsScreen = ({ navigation, route }) => {
     const { mainCategoryID } = route.params || {};
@@ -128,7 +129,7 @@ const CategoryProductsScreen = ({ navigation, route }) => {
                     <Feather name="loader" size={20} />
                 </View>
                 <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color="#0000ff" />
+                    <ActivityIndicator size="large" color={appColors.darkerBg} />
                     <Text style={styles.loadingText}>Loading subcategories...</Text>
                 </View>
             </View>
@@ -208,7 +209,7 @@ const CategoryProductsScreen = ({ navigation, route }) => {
                         </View>
                     ) : productsLoading ? (
                         <View style={styles.loadingContainer}>
-                            <ActivityIndicator size="large" color="#0000ff" />
+                            <ActivityIndicator size="large" color={appColors.darkerBg} />
                             <Text style={styles.loadingText}>Loading products...</Text>
                         </View>
                     ) : productsError ? (
@@ -316,11 +317,7 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         marginBottom: 5,
     },
-    priceRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginVertical: 5,
-    },
+
     recommendPrice: {
         fontSize: 14,
         fontWeight: 'bold',
@@ -413,8 +410,8 @@ const styles = StyleSheet.create({
         borderLeftColor: 'transparent',
     },
     activeSidebarItem: {
-        borderLeftColor: '#00C851',
-        backgroundColor: '#F1FFF2',
+        borderLeftColor: appColors.Primary_Button,
+        backgroundColor: appColors.lightBg,
     },
     sidebarText: {
         fontSize: 12,
@@ -422,7 +419,7 @@ const styles = StyleSheet.create({
     },
     activeSidebarText: {
         fontWeight: 'bold',
-        color: '#00C851',
+        color: appColors.Primary_Button,
     },
 
     productList: {
@@ -458,10 +455,10 @@ const styles = StyleSheet.create({
     price: {
         fontSize: 12,
         fontWeight: 'bold',
-        color: '#00C851',
+        color: appColors.darkerBg,
     },
     addButton: {
-        backgroundColor: '#00C851',
+        backgroundColor: appColors.Primary_Button,
         paddingVertical: 6,
         borderRadius: 8,
     },

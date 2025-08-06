@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, Modal, TouchableOpacity, StyleSheet } from 'react-native';
+import appColors from '../colors/appColors';
 
 const ConfirmationModal = ({ visible, onNext }) => {
     return (
@@ -62,17 +63,17 @@ const styles = StyleSheet.create({
     },
     cancel: {
         borderWidth: 1,
-        borderColor: '#4CAF50',
+        borderColor: appColors.darkerBg,
         paddingVertical: 10,
         paddingHorizontal: 20,
         borderRadius: 10,
     },
     cancelText: {
-        color: '#4CAF50',
+        color: appColors.darkerBg,
         fontWeight: '500',
     },
     next: {
-        backgroundColor: '#4CAF50',
+        backgroundColor: appColors.Primary_Button,
         paddingVertical: 10,
         paddingHorizontal: 20,
         borderRadius: 10,

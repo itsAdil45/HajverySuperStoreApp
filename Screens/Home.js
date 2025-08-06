@@ -26,15 +26,19 @@ import Animated, {
     runOnJS,
     useAnimatedScrollHandler
 } from 'react-native-reanimated';
-
+import appColors from '../colors/appColors';
 const { width } = Dimensions.get('window');
 
 const Home = ({ navigation }) => {
     const { data: categoriesData, loading: categoriesLoading, error: categoriesError, refetch: refetchCategories } = useGet('/categories/all_main');
     const { data: dealsData, loading: dealsLoading, error: dealsError, refetch: refetchDeals } = useGet('/deals');
+    const { data: saleProductsData, loading: saleProductsLoading, error: saleProductsError, refetch: refetchSaleProducts } = useGet('/products');
+    // const { data: homeConfigData, loading: homeConfigLoading, error: homeConfigError, refetch: refetchHomeConfig } = useGet('/admin/home-config'); // Admin endpoint for home page configuration
 
     const [categories, setCategories] = useState([]);
     const [deals, setDeals] = useState([]);
+    const [saleProducts, setSaleProducts] = useState([]);
+    const [homeConfig, setHomeConfig] = useState([]);
     const [keyword, setKeyword] = useState('');
     const { user } = useAuth();
 
@@ -58,33 +62,94 @@ const Home = ({ navigation }) => {
     }, [dealsData]);
 
     useEffect(() => {
-        // Sale badge floating animation
-        // saleAnimation.value = withRepeat(
-        //     withSequence(
-        //         withTiming(1, { duration: 2000, easing: Easing.inOut(Easing.ease) }),
-        //         withTiming(0, { duration: 2000, easing: Easing.inOut(Easing.ease) })
-        //     ),
-        //     -1,
-        //     false
-        // );
+        if (saleProductsData) {
+            // Filter products that have active sale
+            const productsOnSale = saleProductsData.filter(product => product.hasActiveSale === true);
+            setSaleProducts(productsOnSale);
+        }
+    }, [saleProductsData]);
 
-        // // Pulse animation for hot deals
-        // pulseAnimation.value = withRepeat(
-        //     withSequence(
-        //         withTiming(1, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
-        //         withTiming(0, { duration: 1500, easing: Easing.inOut(Easing.ease) })
-        //     ),
-        //     -1,
-        //     false
-        // );
+    // useEffect(() => {
+    //     if (homeConfigData && homeConfigData.categories) {
+    //         setHomeConfig(homeConfigData.categories);
+    //     }
+    // }, [homeConfigData]);
 
-        // // Shimmer effect for banner
-        // shimmerAnimation.value = withRepeat(
-        //     withTiming(1, { duration: 3000, easing: Easing.linear }),
-        //     -1,
-        //     false
-        // );
-    }, []);
+    // Custom hooks for category-specific products
+    const CategoryProductRow = ({ category, title, icon }) => {
+        const { data: categoryProducts, loading: categoryLoading } = useGet(`/products?category=${category}`);
+
+        const renderProductCard = ({ item }) => (
+            <TouchableOpacity
+                style={styles.productCard}
+                onPress={() => navigation.navigate('Product', { productId: item.id })}
+            >
+                <Image source={{ uri: item.images?.[0] }} style={styles.productImage} />
+                <View style={styles.productBadgeContainer}>
+                    {item.hasActiveSale && (
+                        <View style={styles.productSaleBadge}>
+                            <Text style={styles.productBadgeText}>SALE</Text>
+                        </View>
+                    )}
+                    {item.stock < 10 && (
+                        <View style={styles.productLowStockBadge}>
+                            <Text style={styles.productBadgeText}>LOW STOCK</Text>
+                        </View>
+                    )}
+                </View>
+                <Text style={styles.productTitle} numberOfLines={1}>{item.name}</Text>
+                <Text style={styles.productCategory}>{item.category?.sub}</Text>
+                <View style={styles.productPriceRow}>
+                    {item.hasActiveSale && item.variants[0]?.isOnSale ? (
+                        <>
+                            <Text style={styles.productOldPrice}>Rs {item.variants[0]?.price.toFixed(2)}</Text>
+                            <Text style={styles.productPrice}>Rs {item.bestPrice.toFixed(2)}</Text>
+                        </>
+                    ) : (
+                        <Text style={styles.productPrice}>Rs {item.bestPrice.toFixed(2)}</Text>
+                    )}
+                </View>
+                <TouchableOpacity style={styles.productAddBtn}>
+                    <Text style={styles.productAddText}>Add to Cart</Text>
+                </TouchableOpacity>
+            </TouchableOpacity>
+        );
+
+        if (categoryLoading) {
+            return (
+                <View style={styles.categoryLoadingContainer}>
+                    <ActivityIndicator size="small" color={appColors.darkerBg} />
+                </View>
+            );
+        }
+
+        if (!categoryProducts || categoryProducts.length === 0) {
+            return null;
+        }
+
+        return (
+            <View>
+                <View style={styles.sectionHeader}>
+                    <View style={styles.sectionTitleContainer}>
+                        <MaterialIcons name={icon} size={22} color={appColors.Primary_Button} />
+                        <Text style={styles.sectionTitle}>{title}</Text>
+                    </View>
+                    <TouchableOpacity onPress={() => navigation.navigate('SearchResult', { search: category })}>
+                        <Text style={styles.seeAll}>See All</Text>
+                    </TouchableOpacity>
+                </View>
+
+                <FlatList
+                    data={categoryProducts.slice(0, 10)} // Limit to 10 items for performance
+                    keyExtractor={(item) => item.id}
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.productsContainer}
+                    renderItem={renderProductCard}
+                />
+            </View>
+        );
+    };
 
     const scrollHandler = useAnimatedScrollHandler({
         onScroll: (event) => {
@@ -153,19 +218,19 @@ const Home = ({ navigation }) => {
         const percentage = Math.round((savings / originalPrice) * 100);
         return { savings: formatPrice(savings), percentage };
     };
-
-    if (categoriesLoading || dealsLoading) {
+    //|| homeConfigLoading
+    if (categoriesLoading || dealsLoading || saleProductsLoading) {
         return (
             <View style={styles.loadingContainer}>
                 <Animated.View style={animatedPulseStyle}>
-                    <ActivityIndicator size="large" color="#00C851" />
+                    <ActivityIndicator size="large" color={appColors.darkerBg} />
                 </Animated.View>
                 <Text style={styles.loadingText}>Loading amazing deals...</Text>
             </View>
         );
     }
-
-    if (categoriesError || dealsError) {
+    // || homeConfigError
+    if (categoriesError || dealsError || saleProductsError) {
         return (
             <View style={styles.errorContainer}>
                 <MaterialIcons name="error-outline" size={48} color="#FF5252" />
@@ -175,6 +240,8 @@ const Home = ({ navigation }) => {
                     onPress={() => {
                         refetchCategories();
                         refetchDeals();
+                        refetchSaleProducts();
+                        refetchHomeConfig();
                     }}
                 >
                     <Text style={styles.retryText}>Try Again</Text>
@@ -226,7 +293,7 @@ const Home = ({ navigation }) => {
                         {/* Enhanced Meta Info */}
                         <View style={styles.dealMeta}>
                             <View style={styles.savingsPill}>
-                                <MaterialIcons name="savings" size={10} color="#FF5722" />
+                                <MaterialIcons name="savings" size={10} color="white" />
                                 <Text style={styles.savingsText}>Save {savings.savings}</Text>
                             </View>
                             <View style={styles.timerContainer}>
@@ -248,6 +315,40 @@ const Home = ({ navigation }) => {
         );
     };
 
+    const renderSaleProductCard = ({ item }) => (
+        <TouchableOpacity
+            style={styles.productCard}
+            onPress={() => navigation.navigate('Product', { productId: item.id })}
+        >
+            <Image source={{ uri: item.images?.[0] }} style={styles.productImage} />
+            <View style={styles.productBadgeContainer}>
+                <View style={styles.productSaleBadge}>
+                    <Text style={styles.productBadgeText}>SALE</Text>
+                </View>
+                {item.stock < 10 && (
+                    <View style={styles.productLowStockBadge}>
+                        <Text style={styles.productBadgeText}>LOW STOCK</Text>
+                    </View>
+                )}
+            </View>
+            <Text style={styles.productTitle} numberOfLines={1}>{item.name}</Text>
+            <Text style={styles.productCategory}>{item.category?.sub}</Text>
+            <View style={styles.productPriceRow}>
+                {item.variants[0]?.isOnSale ? (
+                    <>
+                        <Text style={styles.productOldPrice}>Rs {item.variants[0]?.price.toFixed(2)}</Text>
+                        <Text style={styles.productPrice}>Rs {item.bestPrice.toFixed(2)}</Text>
+                    </>
+                ) : (
+                    <Text style={styles.productPrice}>Rs {item.bestPrice.toFixed(2)}</Text>
+                )}
+            </View>
+            <TouchableOpacity style={styles.productAddBtn}>
+                <Text style={styles.productAddText}>Add to Cart</Text>
+            </TouchableOpacity>
+        </TouchableOpacity>
+    );
+
     const renderCategoryItem = ({ item, index }) => {
         return (
             <TouchableOpacity
@@ -265,7 +366,7 @@ const Home = ({ navigation }) => {
 
     return (
         <Animated.ScrollView
-            style={styles.container}
+            style={[styles.container]}
             showsVerticalScrollIndicator={false}
             onScroll={scrollHandler}
             scrollEventThrottle={16}
@@ -275,7 +376,7 @@ const Home = ({ navigation }) => {
                 <View>
                     <Text style={styles.locationTitle}>Hello! 👋</Text>
                     <Text style={styles.locationText}>
-                        {user?.address?.split("+")[0]?.trim() || 'Select Location'}
+                        {user?.address?.split("/")[0]?.trim() || 'Select Location'}
                     </Text>
                 </View>
                 <TouchableOpacity style={styles.cartButton} onPress={() => navigation.navigate("CartTab")}>
@@ -386,6 +487,56 @@ const Home = ({ navigation }) => {
                     <MaterialIcons name="local-offer" size={48} color="#ccc" />
                     <Text style={styles.noDealsText}>🎯 Amazing deals loading...</Text>
                 </View>
+            )}
+
+            {/* Sale Products Section */}
+            {saleProducts && saleProducts.length > 0 && (
+                <>
+                    <View style={styles.sectionHeader}>
+                        <View style={styles.sectionTitleContainer}>
+                            <MaterialIcons name="flash-on" size={22} color="#FFD700" />
+                            <Text style={styles.sectionTitle}>Flash Sale</Text>
+                        </View>
+                        <TouchableOpacity onPress={() => navigation.navigate('SearchResult', { hasActiveSale: true })}>
+                            <Text style={styles.seeAll}>See All</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    <FlatList
+                        data={saleProducts.slice(0, 10)} // Limit to 10 items
+                        keyExtractor={(item) => item.id}
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.productsContainer}
+                        renderItem={renderSaleProductCard}
+                    />
+                </>
+            )}
+
+            {/* Dynamic Category Product Rows */}
+            {homeConfig && homeConfig.length > 0 && homeConfig.map((config, index) => (
+                <CategoryProductRow
+                    key={config.category || index}
+                    category={config.category}
+                    title={config.title}
+                    icon={config.icon || "category"}
+                />
+            ))}
+
+            {/* Fallback Category Rows if no admin config */}
+            {(!homeConfig || homeConfig.length === 0) && (
+                <>
+                    <CategoryProductRow
+                        category="fruits"
+                        title="Fresh Fruits"
+                        icon="eco"
+                    />
+                    <CategoryProductRow
+                        category="bread"
+                        title="Fresh Bread"
+                        icon="bakery-dining"
+                    />
+                </>
             )}
 
             {/* Bottom Spacing */}
@@ -504,11 +655,11 @@ const styles = StyleSheet.create({
         color: '#333',
     },
     filterBtn: {
-        backgroundColor: '#00C851',
+        backgroundColor: appColors.Primary_Button,
         padding: 12,
         borderRadius: 15,
         marginLeft: 12,
-        shadowColor: '#00C851',
+        shadowColor: appColors.lightBg,
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.3,
         shadowRadius: 4,
@@ -533,7 +684,7 @@ const styles = StyleSheet.create({
         color: '#333',
     },
     seeAll: {
-        color: '#00C851',
+        color: appColors.Primary_Button,
         fontSize: 14,
         fontWeight: '600',
     },
@@ -581,7 +732,7 @@ const styles = StyleSheet.create({
     },
     banner: {
         margin: 20,
-        backgroundColor: '#E6F9EC',
+        backgroundColor: appColors.lightBg,
         borderRadius: 25,
         padding: 20,
         position: 'relative',
@@ -599,14 +750,14 @@ const styles = StyleSheet.create({
         lineHeight: 24,
     },
     shopNowBtn: {
-        backgroundColor: '#00C851',
+        backgroundColor: appColors.Hover_Button,
         paddingVertical: 10,
         paddingHorizontal: 18,
         borderRadius: 15,
         alignSelf: 'flex-start',
         flexDirection: 'row',
         alignItems: 'center',
-        shadowColor: '#00C851',
+        shadowColor: appColors.lightBg,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 8,
@@ -638,6 +789,97 @@ const styles = StyleSheet.create({
     dealsContainer: {
         paddingLeft: 20,
         paddingBottom: 15,
+    },
+    productsContainer: {
+        paddingLeft: 20,
+        paddingBottom: 15,
+    },
+    categoryLoadingContainer: {
+        padding: 20,
+        alignItems: 'center',
+    },
+    // Product Card Styles
+    productCard: {
+        backgroundColor: '#fff',
+        width: 160,
+        marginRight: 15,
+        borderRadius: 15,
+        padding: 12,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+    },
+    productImage: {
+        width: '100%',
+        height: 100,
+        resizeMode: 'cover',
+        marginBottom: 8,
+        borderRadius: 10,
+    },
+    productBadgeContainer: {
+        position: 'absolute',
+        top: 8,
+        left: 8,
+        flexDirection: 'row',
+    },
+    productSaleBadge: {
+        backgroundColor: '#FF3B30',
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 4,
+        marginRight: 5,
+    },
+    productLowStockBadge: {
+        backgroundColor: '#FF9500',
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 4,
+    },
+    productBadgeText: {
+        color: '#fff',
+        fontSize: 9,
+        fontWeight: 'bold',
+    },
+    productTitle: {
+        fontSize: 14,
+        fontWeight: '600',
+        marginBottom: 4,
+        color: '#333',
+    },
+    productCategory: {
+        fontSize: 12,
+        color: '#777',
+        marginBottom: 6,
+    },
+    productPriceRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 8,
+    },
+    productOldPrice: {
+        color: '#aaa',
+        textDecorationLine: 'line-through',
+        fontSize: 11,
+        marginRight: 5,
+    },
+    productPrice: {
+        color: appColors.Hover_Button,
+        fontWeight: 'bold',
+        fontSize: 14,
+    },
+    productAddBtn: {
+        backgroundColor: appColors.Primary_Button,
+        paddingVertical: 6,
+        borderRadius: 8,
+        marginTop: 5,
+    },
+    productAddText: {
+        color: '#fff',
+        textAlign: 'center',
+        fontWeight: '600',
+        fontSize: 12,
     },
     dealCard: {
         width: 280,
@@ -672,7 +914,7 @@ const styles = StyleSheet.create({
         position: 'absolute',
         top: 12,
         right: 12,
-        backgroundColor: '#FF5722',
+        backgroundColor: appColors.Hover_Button,
         paddingHorizontal: 10,
         paddingVertical: 6,
         borderRadius: 15,
@@ -712,7 +954,7 @@ const styles = StyleSheet.create({
     currentPrice: {
         fontSize: 20,
         fontWeight: '800',
-        color: '#00C851',
+        color: appColors.Hover_Button,
         marginRight: 8,
     },
     originalPrice: {
@@ -727,7 +969,7 @@ const styles = StyleSheet.create({
         marginBottom: 12,
     },
     savingsPill: {
-        backgroundColor: '#FFF0E5',
+        backgroundColor: appColors.Hover_Button,
         borderRadius: 12,
         paddingHorizontal: 8,
         paddingVertical: 4,
@@ -736,7 +978,7 @@ const styles = StyleSheet.create({
     },
     savingsText: {
         fontSize: 11,
-        color: '#FF5722',
+        color: "white",
         fontWeight: '700',
         marginLeft: 4,
     },
@@ -746,18 +988,18 @@ const styles = StyleSheet.create({
     },
     timerText: {
         fontSize: 11,
-        color: '#FF5722',
+        color: "#FF5722",
         marginLeft: 4,
         fontWeight: '600',
     },
     dealActionBtn: {
-        backgroundColor: '#00C851',
+        backgroundColor: appColors.Primary_Button,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
         paddingVertical: 10,
         borderRadius: 12,
-        shadowColor: '#00C851',
+        shadowColor: appColors.lightBg,
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.3,
         shadowRadius: 4,
@@ -786,4 +1028,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default Home;    
+export default Home;

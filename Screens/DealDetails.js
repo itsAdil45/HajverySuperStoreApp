@@ -17,8 +17,25 @@ import { MaterialIcons, Feather, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import useGet from '../hooks/useGet'; // Adjust import path as needed
 import usePost from '../hooks/usePost';
+import appColors from '../colors/appColors';
 
 const { width, height } = Dimensions.get('window');
+
+// Extended color palette for the blue theme
+const themeColors = {
+    ...appColors,
+    primaryBlue: '#0e5aa6',
+    lightBlue: '#3f7fc0',
+    paleBlue: '#d9e6f2',
+    darkBlue: '#0c4b8b',
+    accentOrange: '#f4a261',
+    stockGreen: appColors.Hover_Button,
+    stockRed: '#e63946',
+    gradientStart: '#1e40af',
+    gradientEnd: '#3b82f6',
+    cardBlue: '#f0f7ff',
+    textBlue: '#1e3a8a',
+};
 
 const DealDetails = ({ navigation, route }) => {
     const { dealId } = route.params;
@@ -57,7 +74,7 @@ const DealDetails = ({ navigation, route }) => {
     }, [dealData]);
 
     const formatPrice = (price) => {
-        return `$${price.toFixed(2)}`;
+        return `Rs ${price.toFixed(2)}`;
     };
 
     const calculateSavings = (originalPrice, dealPrice) => {
@@ -105,7 +122,7 @@ const DealDetails = ({ navigation, route }) => {
                     <View style={styles.stockIndicator}>
                         <View style={[
                             styles.stockDot,
-                            { backgroundColor: product.stock > 0 ? '#00C851' : '#FF5252' }
+                            { backgroundColor: product.stock > 0 ? themeColors.stockGreen : themeColors.stockRed }
                         ]} />
                     </View>
                 </View>
@@ -124,7 +141,7 @@ const DealDetails = ({ navigation, route }) => {
                             <Ionicons
                                 name="add"
                                 size={16}
-                                color={product.stock > 0 ? "#00C851" : "#ccc"}
+                                color={product.stock > 0 ? themeColors.primaryBlue : "#ccc"}
                             />
                         </TouchableOpacity>
                     </View>
@@ -143,7 +160,7 @@ const DealDetails = ({ navigation, route }) => {
                     <View style={styles.stockRow}>
                         <Text style={[
                             styles.stockText,
-                            { color: product.stock > 0 ? "#00C851" : "#FF5252" }
+                            { color: product.stock > 0 ? themeColors.stockGreen : themeColors.stockRed }
                         ]}>
                             {product.stock > 0 ? `${product.stock} left` : 'Out of stock'}
                         </Text>
@@ -156,7 +173,7 @@ const DealDetails = ({ navigation, route }) => {
     if (loading) {
         return (
             <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#00C851" />
+                <ActivityIndicator size="large" color={themeColors.primaryBlue} />
                 <Text style={styles.loadingText}>Loading deal details...</Text>
             </View>
         );
@@ -166,7 +183,7 @@ const DealDetails = ({ navigation, route }) => {
         return (
             <View style={styles.errorContainer}>
                 <LinearGradient
-                    colors={['#FF6B6B', '#FF5252']}
+                    colors={[themeColors.lightBlue, themeColors.primaryBlue]}
                     style={styles.errorIcon}
                 >
                     <Ionicons name="alert-circle-outline" size={32} color="#fff" />
@@ -175,7 +192,7 @@ const DealDetails = ({ navigation, route }) => {
                 <Text style={styles.errorText}>We couldn't load this deal</Text>
                 <TouchableOpacity style={styles.retryButton} onPress={refetch}>
                     <LinearGradient
-                        colors={['#00C851', '#00A843']}
+                        colors={[themeColors.lightBlue, themeColors.primaryBlue]}
                         style={styles.retryGradient}
                     >
                         <Text style={styles.retryText}>Try Again</Text>
@@ -191,8 +208,6 @@ const DealDetails = ({ navigation, route }) => {
 
     return (
         <View style={styles.container}>
-            {/* <StatusBar barStyle="light-content" backgroundColor="transparent" translucent /> */}
-
             {/* Floating Back Button */}
             <TouchableOpacity
                 style={styles.floatingBackBtn}
@@ -218,13 +233,13 @@ const DealDetails = ({ navigation, route }) => {
                         resizeMode="cover"
                     />
                     <LinearGradient
-                        colors={['transparent', 'rgba(0,0,0,0.6)']}
+                        colors={['transparent', 'rgba(14,90,166,0.7)']}
                         style={styles.heroGradient}
                     />
 
                     {/* Deal Badge */}
                     <LinearGradient
-                        colors={['#FF6B35', '#FF8E53']}
+                        colors={[themeColors.accentOrange, '#ff8c42']}
                         style={styles.heroBadge}
                     >
                         <Text style={styles.heroDiscountText}>{savings.percentage}%</Text>
@@ -236,11 +251,11 @@ const DealDetails = ({ navigation, route }) => {
                         <Ionicons
                             name="time-outline"
                             size={14}
-                            color={isExpired ? "#FF5252" : isExpiringSoon ? "#FF9800" : "#00C851"}
+                            color={isExpired ? themeColors.stockRed : isExpiringSoon ? themeColors.accentOrange : themeColors.primaryBlue}
                         />
                         <Text style={[
                             styles.heroTimerText,
-                            { color: isExpired ? "#FF5252" : isExpiringSoon ? "#FF9800" : "#00C851" }
+                            { color: isExpired ? themeColors.stockRed : isExpiringSoon ? themeColors.accentOrange : themeColors.primaryBlue }
                         ]}>
                             {isExpired ? 'Expired' : getTimeRemaining(deal.validUntil)}
                         </Text>
@@ -258,11 +273,11 @@ const DealDetails = ({ navigation, route }) => {
                     {/* Price Card */}
                     <View style={styles.priceCard}>
                         <LinearGradient
-                            colors={['#F0FDF4', '#DCFCE7']}
+                            colors={[themeColors.cardBlue, themeColors.paleBlue]}
                             style={styles.priceGradient}
                         >
                             <View style={styles.priceHeader}>
-                                <Ionicons name="pricetag" size={20} color="#00C851" />
+                                <Ionicons name="pricetag" size={20} color={themeColors.primaryBlue} />
                                 <Text style={styles.priceCardTitle}>Deal Price</Text>
                             </View>
 
@@ -272,7 +287,7 @@ const DealDetails = ({ navigation, route }) => {
                             </View>
 
                             <View style={styles.savingsRow}>
-                                <Ionicons name="trending-down" size={16} color="#00C851" />
+                                <Ionicons name="trending-down" size={16} color={themeColors.primaryBlue} />
                                 <Text style={styles.savingsLabel}>You save {savings.savings}</Text>
                             </View>
                         </LinearGradient>
@@ -281,7 +296,7 @@ const DealDetails = ({ navigation, route }) => {
                     {/* Deal Status */}
                     <View style={styles.statusCard}>
                         <View style={styles.statusHeader}>
-                            <Ionicons name="information-circle-outline" size={18} color="#666" />
+                            <Ionicons name="information-circle-outline" size={18} color={themeColors.textBlue} />
                             <Text style={styles.statusTitle}>Deal Status</Text>
                         </View>
 
@@ -289,17 +304,17 @@ const DealDetails = ({ navigation, route }) => {
                             <View style={[
                                 styles.statusChip,
                                 {
-                                    backgroundColor: isExpired ? '#FEE2E2' : deal.isActive ? '#DCFCE7' : '#FEF3C7',
+                                    backgroundColor: isExpired ? '#fee2e2' : deal.isActive ? themeColors.paleBlue : '#fef3c7',
                                 }
                             ]}>
                                 <Ionicons
                                     name={isExpired ? "close-circle" : deal.isActive ? "checkmark-circle" : "pause-circle"}
                                     size={14}
-                                    color={isExpired ? "#EF4444" : deal.isActive ? "#22C55E" : "#F59E0B"}
+                                    color={isExpired ? themeColors.stockRed : deal.isActive ? themeColors.primaryBlue : themeColors.accentOrange}
                                 />
                                 <Text style={[
                                     styles.statusChipText,
-                                    { color: isExpired ? "#EF4444" : deal.isActive ? "#22C55E" : "#F59E0B" }
+                                    { color: isExpired ? themeColors.stockRed : deal.isActive ? themeColors.primaryBlue : themeColors.accentOrange }
                                 ]}>
                                     {isExpired ? 'Expired' : deal.isActive ? 'Active' : 'Inactive'}
                                 </Text>
@@ -319,7 +334,7 @@ const DealDetails = ({ navigation, route }) => {
                     {/* Products Section */}
                     <View style={styles.productsSection}>
                         <View style={styles.sectionHeader}>
-                            <Ionicons name="cube-outline" size={20} color="#333" />
+                            <Ionicons name="cube-outline" size={20} color={themeColors.textBlue} />
                             <Text style={styles.sectionTitle}>
                                 Included Products ({deal.products.length})
                             </Text>
@@ -345,7 +360,7 @@ const DealDetails = ({ navigation, route }) => {
                             disabled={postLoading}
                         >
                             <LinearGradient
-                                colors={['#00C851', '#00A843']}
+                                colors={[themeColors.primaryBlue, themeColors.lightBlue]}
                                 style={styles.fabGradient}
                             >
                                 {postLoading ? (
@@ -362,10 +377,6 @@ const DealDetails = ({ navigation, route }) => {
                     </View>
                 )}
             </ScrollView>
-
-
-            {/* Floating Action Button */}
-
         </View>
     );
 };
@@ -373,7 +384,7 @@ const DealDetails = ({ navigation, route }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F8F9FA',
+        backgroundColor: appColors.Background,
     },
 
     // Loading & Error States
@@ -381,19 +392,19 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#F8F9FA',
+        backgroundColor: appColors.Background,
     },
     loadingText: {
         marginTop: 16,
         fontSize: 16,
-        color: '#666',
+        color: appColors.Text_Body,
         fontWeight: '500',
     },
     errorContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#F8F9FA',
+        backgroundColor: appColors.Background,
         paddingHorizontal: 40,
     },
     errorIcon: {
@@ -407,7 +418,7 @@ const styles = StyleSheet.create({
     errorTitle: {
         fontSize: 20,
         fontWeight: 'bold',
-        color: '#2D3748',
+        color: appColors.Text_Body,
         marginBottom: 8,
     },
     errorText: {
@@ -437,7 +448,7 @@ const styles = StyleSheet.create({
         left: 20,
         width: 44,
         height: 44,
-        backgroundColor: 'rgba(0,0,0,0.3)',
+        backgroundColor: 'rgba(14,90,166,0.8)',
         borderRadius: 22,
         justifyContent: 'center',
         alignItems: 'center',
@@ -449,7 +460,7 @@ const styles = StyleSheet.create({
         right: 20,
         width: 44,
         height: 44,
-        backgroundColor: 'rgba(0,0,0,0.3)',
+        backgroundColor: 'rgba(14,90,166,0.8)',
         borderRadius: 22,
         justifyContent: 'center',
         alignItems: 'center',
@@ -523,7 +534,7 @@ const styles = StyleSheet.create({
 
     // Content Section
     contentContainer: {
-        backgroundColor: '#F8F9FA',
+        backgroundColor: appColors.Background,
         borderTopLeftRadius: 24,
         borderTopRightRadius: 24,
         marginTop: -24,
@@ -537,13 +548,13 @@ const styles = StyleSheet.create({
     dealTitle: {
         fontSize: 24,
         fontWeight: 'bold',
-        color: '#1A202C',
+        color: themeColors.textBlue,
         marginBottom: 8,
         lineHeight: 32,
     },
     dealDescription: {
         fontSize: 16,
-        color: '#4A5568',
+        color: appColors.Text_Body,
         lineHeight: 24,
     },
 
@@ -569,7 +580,7 @@ const styles = StyleSheet.create({
     priceCardTitle: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#00C851',
+        color: themeColors.primaryBlue,
         marginLeft: 8,
     },
     priceRow: {
@@ -580,7 +591,7 @@ const styles = StyleSheet.create({
     mainPrice: {
         fontSize: 32,
         fontWeight: 'bold',
-        color: '#00C851',
+        color: themeColors.primaryBlue,
         marginRight: 16,
     },
     crossedPrice: {
@@ -594,7 +605,7 @@ const styles = StyleSheet.create({
     },
     savingsLabel: {
         fontSize: 14,
-        color: '#00C851',
+        color: themeColors.primaryBlue,
         fontWeight: '600',
         marginLeft: 6,
     },
@@ -610,6 +621,8 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.05,
         shadowRadius: 8,
         elevation: 2,
+        borderLeftWidth: 4,
+        borderLeftColor: themeColors.primaryBlue,
     },
     statusHeader: {
         flexDirection: 'row',
@@ -619,7 +632,7 @@ const styles = StyleSheet.create({
     statusTitle: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#374151',
+        color: themeColors.textBlue,
         marginLeft: 8,
     },
     statusContent: {
@@ -656,7 +669,7 @@ const styles = StyleSheet.create({
     sectionTitle: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#1A202C',
+        color: themeColors.textBlue,
         marginLeft: 8,
     },
     productsGrid: {
@@ -678,6 +691,8 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.05,
         shadowRadius: 8,
         elevation: 2,
+        borderTopWidth: 2,
+        borderTopColor: themeColors.paleBlue,
     },
     productImageContainer: {
         height: 120,
@@ -687,11 +702,11 @@ const styles = StyleSheet.create({
         width: '100%',
         height: '100%',
     },
-    saleBadge: {
+    salebadge: {
         position: 'absolute',
         top: 8,
         right: 8,
-        backgroundColor: '#EF4444',
+        backgroundColor: themeColors.accentOrange,
         paddingHorizontal: 6,
         paddingVertical: 2,
         borderRadius: 8,
@@ -722,7 +737,7 @@ const styles = StyleSheet.create({
     },
     productBrand: {
         fontSize: 11,
-        color: '#6B7280',
+        color: themeColors.lightBlue,
         textTransform: 'uppercase',
         fontWeight: '500',
         letterSpacing: 0.5,
@@ -731,14 +746,14 @@ const styles = StyleSheet.create({
         width: 24,
         height: 24,
         borderRadius: 12,
-        backgroundColor: '#F3F4F6',
+        backgroundColor: themeColors.paleBlue,
         justifyContent: 'center',
         alignItems: 'center',
     },
     productName: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#1F2937',
+        color: themeColors.textBlue,
         marginBottom: 8,
         lineHeight: 18,
     },
@@ -750,7 +765,7 @@ const styles = StyleSheet.create({
     currentPrice: {
         fontSize: 16,
         fontWeight: 'bold',
-        color: '#00C851',
+        color: themeColors.primaryBlue,
         marginRight: 6,
     },
     originalPrice: {
@@ -777,7 +792,7 @@ const styles = StyleSheet.create({
     fab: {
         borderRadius: 25,
         overflow: 'hidden',
-        shadowColor: '#000',
+        shadowColor: themeColors.primaryBlue,
         shadowOffset: { width: 0, height: 8 },
         shadowOpacity: 0.3,
         shadowRadius: 20,

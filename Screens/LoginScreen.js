@@ -13,6 +13,7 @@ import {
 import { Feather } from '@expo/vector-icons';
 
 import { useAuth } from '../contexts/AuthContext';
+import appColors from '../colors/appColors';
 
 const LoginScreen = ({ navigation }) => {
     const [email, setEmail] = useState('');
@@ -53,6 +54,7 @@ const LoginScreen = ({ navigation }) => {
                 value={email}
                 keyboardType="email-address"
                 autoCapitalize="none"
+                placeholderTextColor="#777"
                 onChangeText={setEmail}
             />
 
@@ -62,6 +64,7 @@ const LoginScreen = ({ navigation }) => {
                     placeholder="Password"
                     value={password}
                     secureTextEntry={hidePassword}
+                    placeholderTextColor="#777"
                     onChangeText={setPassword}
                 />
                 <TouchableOpacity onPress={() => setHidePassword(!hidePassword)}>
@@ -146,7 +149,7 @@ const styles = StyleSheet.create({
         fontSize: 13,
     },
     loginButton: {
-        backgroundColor: '#4CAF50',
+        backgroundColor: appColors.Primary_Button,
         paddingVertical: 14,
         borderRadius: 12,
         alignItems: 'center',
@@ -167,7 +170,7 @@ const styles = StyleSheet.create({
     },
     signupLink: {
         fontSize: 14,
-        color: '#4CAF50',
+        color: appColors.darkerBg,
         fontWeight: '500',
     },
 });

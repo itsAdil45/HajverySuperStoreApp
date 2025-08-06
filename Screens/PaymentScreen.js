@@ -60,6 +60,7 @@ const PhoneModal = ({ visible, onClose, tempPhone, setTempPhone, onUpdate, loadi
 
 import usePostFormData from '../hooks/usePostFormData';
 import useGet from '../hooks/useGet';
+import appColors from '../colors/appColors';
 
 export default function PaymentScreen({ navigation, route }) {
     const { total } = route.params || {};
@@ -101,7 +102,7 @@ export default function PaymentScreen({ navigation, route }) {
 
     const getDisplayAddress = (fullAddress) => {
         if (!fullAddress) return "No address selected";
-        return fullAddress.split("+")[0].trim();
+        return fullAddress.split("/")[0].trim();
     };
 
     const updateUserProfile = async (updates) => {
@@ -152,7 +153,7 @@ export default function PaymentScreen({ navigation, route }) {
             const { selectedAddress: routeAddress } = route.params || {};
 
             if (routeAddress && user) {
-                const displayAddress = routeAddress.split("+")[0].trim();
+                const displayAddress = routeAddress.split("/")[0].trim();
                 setSelectedAddress(displayAddress);
 
                 const success = await updateUserProfile({ address: routeAddress });
@@ -160,7 +161,7 @@ export default function PaymentScreen({ navigation, route }) {
                 if (success) {
                     navigation.setParams({ selectedAddress: undefined });
                 } else {
-                    setSelectedAddress(user.address ? user.address.split("+")[0].trim() : null);
+                    setSelectedAddress(user.address ? user.address.split("/")[0].trim() : null);
                 }
             }
         };
@@ -301,12 +302,12 @@ export default function PaymentScreen({ navigation, route }) {
                             style={styles.addressItem}
                             onPress={() => setModalVisible(false)}
                         >
-                            <Ionicons name="location-outline" size={20} color="#53B175" />
+                            <Ionicons name="location-outline" size={20} color={appColors.Hover_Button} />
                             <View style={styles.addressTextContainer}>
                                 <Text style={styles.addressTitle}>Current Address</Text>
                                 <Text style={styles.addressText}>{getDisplayAddress(user.address)}</Text>
                             </View>
-                            <Ionicons name="checkmark-circle" size={20} color="#53B175" />
+                            <Ionicons name="checkmark-circle" size={20} color={appColors.Primary_Button} />
                         </TouchableOpacity>
                     )}
 
@@ -317,7 +318,7 @@ export default function PaymentScreen({ navigation, route }) {
                             handleAddressSelection();
                         }}
                     >
-                        <Ionicons name="add-circle-outline" size={24} color="#53B175" />
+                        <Ionicons name="add-circle-outline" size={24} color={appColors.Hover_Button} />
                         <Text style={styles.addAddressText}>Add New Address</Text>
                     </TouchableOpacity>
                 </View>
@@ -343,7 +344,7 @@ export default function PaymentScreen({ navigation, route }) {
                     <View style={styles.infoCard}>
                         <View style={styles.infoRow}>
                             <View style={styles.infoLeft}>
-                                <Ionicons name="location" size={20} color="#53B175" />
+                                <Ionicons name="location" size={20} color={appColors.darkerBg} />
                                 <View style={styles.infoTextContainer}>
                                     <Text style={styles.infoLabel}>Delivering to</Text>
                                     <Text style={styles.infoValue}>
@@ -366,7 +367,7 @@ export default function PaymentScreen({ navigation, route }) {
 
                         <View style={styles.infoRow}>
                             <View style={styles.infoLeft}>
-                                <Ionicons name="call" size={20} color="#53B175" />
+                                <Ionicons name="call" size={20} color={appColors.darkerBg} />
                                 <View style={styles.infoTextContainer}>
                                     <Text style={styles.infoLabel}>Contact</Text>
                                     <Text style={styles.infoValue}>
@@ -397,7 +398,7 @@ export default function PaymentScreen({ navigation, route }) {
                     <View style={styles.summaryCard}>
                         {/* Header with icon */}
                         <View style={styles.summaryHeader}>
-                            <Ionicons name="receipt-outline" size={20} color="#53B175" />
+                            <Ionicons name="receipt-outline" size={20} color={appColors.darkerBg} />
                             <Text style={styles.summaryHeaderText}>Order Details</Text>
                         </View>
 
@@ -449,7 +450,7 @@ export default function PaymentScreen({ navigation, route }) {
                         onPress={() => setSelectedMethod('cod')}
                     >
                         <View style={styles.paymentLeft}>
-                            <Ionicons name="cash-outline" size={24} color="#53B175" />
+                            <Ionicons name="cash-outline" size={24} color={appColors.darkerBg} />
                             <View>
                                 <Text style={styles.paymentTitle}>Cash on Delivery</Text>
                                 <Text style={styles.paymentSubtitle}>Pay when you receive</Text>
@@ -473,7 +474,7 @@ export default function PaymentScreen({ navigation, route }) {
                         onPress={() => setSelectedMethod('online')}
                     >
                         <View style={styles.paymentLeft}>
-                            <Ionicons name="card-outline" size={24} color="#53B175" />
+                            <Ionicons name="card-outline" size={24} color={appColors.darkerBg} />
                             <View>
                                 <Text style={styles.paymentTitle}>Online Payment</Text>
                                 <Text style={styles.paymentSubtitle}>Pay via bank transfer</Text>
@@ -638,10 +639,10 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12,
         paddingVertical: 6,
         borderRadius: 6,
-        backgroundColor: '#f0f9f0',
+        backgroundColor: appColors.lightBg,
     },
     changeBtnText: {
-        color: '#53B175',
+        color: appColors.Hover_Button,
         fontWeight: '500',
         fontSize: 14,
     },
@@ -651,7 +652,7 @@ const styles = StyleSheet.create({
         marginVertical: 16,
     },
     totalCard: {
-        backgroundColor: '#53B175',
+        backgroundColor: appColors.Primary_Button,
         borderRadius: 12,
         padding: 20,
         flexDirection: 'row',
@@ -681,8 +682,8 @@ const styles = StyleSheet.create({
         elevation: 1,
     },
     selectedOption: {
-        borderColor: '#53B175',
-        backgroundColor: '#f0f9f0',
+        borderColor: appColors.lightBg,
+        backgroundColor: appColors.lightBg,
     },
     paymentLeft: {
         flexDirection: 'row',
@@ -711,13 +712,13 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     radioSelected: {
-        borderColor: '#53B175',
+        borderColor: appColors.Primary_Button,
     },
     radioInner: {
         width: 8,
         height: 8,
         borderRadius: 4,
-        backgroundColor: '#53B175',
+        backgroundColor: appColors.Primary_Button,
     },
     onlineSection: {
         backgroundColor: '#fff',
@@ -778,7 +779,7 @@ const styles = StyleSheet.create({
         elevation: 8,
     },
     placeOrderBtn: {
-        backgroundColor: '#53B175',
+        backgroundColor: appColors.Primary_Button,
         borderRadius: 12,
         padding: 18,
         flexDirection: 'row',
@@ -824,11 +825,11 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         padding: 16,
-        backgroundColor: '#f0f9f0',
+        backgroundColor: appColors.lightBg,
         borderRadius: 12,
         marginBottom: 16,
         borderWidth: 1,
-        borderColor: '#53B175',
+        borderColor: appColors.Primary_Button,
     },
     addressTextContainer: {
         flex: 1,
@@ -837,12 +838,12 @@ const styles = StyleSheet.create({
     addressTitle: {
         fontSize: 14,
         fontWeight: '500',
-        color: '#53B175',
+        color: appColors.Hover_Button,
         marginBottom: 4,
     },
     addressText: {
         fontSize: 14,
-        color: '#333',
+        color: appColors.darkerBg,
     },
     addAddressBtn: {
         flexDirection: 'row',
@@ -850,12 +851,12 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         padding: 16,
         borderWidth: 2,
-        borderColor: '#53B175',
+        borderColor: appColors.Primary_Button,
         borderStyle: 'dashed',
         borderRadius: 12,
     },
     addAddressText: {
-        color: '#53B175',
+        color: appColors.darkerBg,
         fontWeight: '500',
         marginLeft: 8,
     },
@@ -936,7 +937,7 @@ const styles = StyleSheet.create({
     summaryHeaderText: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#53B175',
+        color: appColors.darkerBg,
         marginLeft: 8,
     },
     summaryContent: {
@@ -978,6 +979,6 @@ const styles = StyleSheet.create({
     totalAmount: {
         fontSize: 16,
         fontWeight: '700',
-        color: '#53B175',
+        color: appColors.darkerBg,
     },
 });

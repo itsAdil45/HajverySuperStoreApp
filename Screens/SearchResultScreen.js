@@ -14,22 +14,36 @@ import {
 import { Feather, MaterialIcons, AntDesign } from '@expo/vector-icons';
 import useGet from '../hooks/useGet';
 import Slider from '@react-native-community/slider';
+import appColors from '../colors/appColors';
 
 const SearchResultScreen = ({ route, navigation }) => {
-    const [searchParams, setSearchParams] = useState('');
+    // Extract search parameter first
+    const { search, hasActiveSale } = route.params || {};
+
+    // Initialize searchParams with the route parameter to prevent double API call
+    const [searchParams, setSearchParams] = useState(search || '');
     const [showFilters, setShowFilters] = useState(false);
     const [priceRange, setPriceRange] = useState([0, 100]);
     const [selectedCategories, setSelectedCategories] = useState([]);
     const [selectedBrands, setSelectedBrands] = useState([]);
     const [sortOption, setSortOption] = useState('relevance');
     const [searchText, setSearchText] = useState(search || '');
-    // Extract unique categories and brands from data for filters
-    const { search } = route.params || {};
-    useEffect(() => {
-        setSearchParams(search)
-    }, [])
-    const { data, loading, error, refetch } = useGet(`/products?search=${encodeURIComponent(searchParams)}`);
 
+    // Remove the useEffect that was causing the double call
+    // useEffect(() => {
+    //     setSearchParams(search)
+    // }, [])
+    let url = '';
+
+    if (!hasActiveSale) {
+        url = `/products?search=${encodeURIComponent(searchParams)}`;
+    }
+    else {
+        url = `/products?hasActiveSale=${hasActiveSale}`;
+    }
+    const { data, loading, error, refetch } = useGet(url);
+
+    // Extract unique categories and brands from data for filters
     const categories = [...new Set(data?.map(item => item.category?.sub).filter(Boolean))];
     const brands = [...new Set(data?.map(item => item.brand).filter(Boolean))];
 
@@ -44,7 +58,6 @@ const SearchResultScreen = ({ route, navigation }) => {
 
         return priceMatch && categoryMatch && brandMatch;
     });
-
 
     // Sort data based on selected option
     const sortedData = [...(filteredData || [])].sort((a, b) => {
@@ -74,6 +87,11 @@ const SearchResultScreen = ({ route, navigation }) => {
                 ? prev.filter(b => b !== brand)
                 : [...prev, brand]
         );
+    };
+
+    const handleSearch = () => {
+        setSearchParams(searchText);
+        // The useGet hook will automatically refetch when searchParams changes
     };
 
     const renderItem = ({ item }) => {
@@ -108,7 +126,7 @@ const SearchResultScreen = ({ route, navigation }) => {
                     )}
                 </View>
                 <TouchableOpacity style={styles.addBtn}>
-                    <Text style={styles.addText}>Add</Text>
+                    <Text style={styles.addText}>View</Text>
                 </TouchableOpacity>
             </TouchableOpacity>
         );
@@ -128,10 +146,7 @@ const SearchResultScreen = ({ route, navigation }) => {
                         placeholder="Search products..."
                         value={searchText}
                         onChangeText={setSearchText}
-                        onSubmitEditing={() => {
-                            setSearchParams(searchText),
-                                refetch({ search: searchText })
-                        }}
+                        onSubmitEditing={handleSearch}
                     />
                     {searchText ? (
                         <TouchableOpacity onPress={() => setSearchText('')}>
@@ -160,14 +175,14 @@ const SearchResultScreen = ({ route, navigation }) => {
 
             {loading ? (
                 <View style={styles.center}>
-                    <ActivityIndicator size="large" color="#00C851" />
+                    <ActivityIndicator size="large" color={appColors.darkerBg} />
                     <Text>Loading products...</Text>
                 </View>
             ) : error ? (
                 <View style={styles.center}>
                     <Text>Error loading products</Text>
                     <TouchableOpacity onPress={refetch}>
-                        <Text style={{ color: '#00C851', marginTop: 10 }}>Retry</Text>
+                        <Text style={{ color: appColors.darkerBg, marginTop: 10 }}>Retry</Text>
                     </TouchableOpacity>
                 </View>
             ) : sortedData?.length === 0 ? (
@@ -252,8 +267,8 @@ const SearchResultScreen = ({ route, navigation }) => {
                         <View style={styles.filterSection}>
                             <Text style={styles.filterTitle}>Price Range</Text>
                             <View style={styles.priceRangeValues}>
-                                <Text>${priceRange[0].toFixed(2)}</Text>
-                                <Text>${priceRange[1].toFixed(2)}</Text>
+                                <Text>Rs {priceRange[0].toFixed(2)}</Text>
+                                <Text>Rs {priceRange[1].toFixed(2)}</Text>
                             </View>
                             <Slider
                                 style={styles.slider}
@@ -498,12 +513,12 @@ const styles = StyleSheet.create({
         marginRight: 5,
     },
     price: {
-        color: '#00C851',
+        color: appColors.Hover_Button,
         fontWeight: 'bold',
         fontSize: 16,
     },
     addBtn: {
-        backgroundColor: '#00C851',
+        backgroundColor: appColors.Primary_Button,
         paddingVertical: 8,
         borderRadius: 8,
         marginTop: 5,
