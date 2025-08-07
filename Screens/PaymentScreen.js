@@ -15,7 +15,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../contexts/AuthContext';
-
+import Toast from 'react-native-toast-message';
 const { width } = Dimensions.get('window');
 import usePut from '../hooks/usePut'; // Add this import
 
@@ -127,12 +127,22 @@ export default function PaymentScreen({ navigation, route }) {
                 return true;
             } else {
                 console.error('Failed to update profile:', updateError);
-                Alert.alert('Error', 'Failed to update profile. Please try again.');
+                Toast.show({
+                    type: 'error',
+                    text1: 'Error',
+                    text2: 'Failed to update profile. Please try again.',
+                    position: 'top',
+                });
                 return false;
             }
         } catch (error) {
             console.error('Error updating profile:', error);
-            Alert.alert('Error', 'Failed to update profile. Please try again.');
+            Toast.show({
+                type: 'error',
+                text1: 'Error',
+                text2: 'Failed to update profile. Please try again.',
+                position: 'top',
+            });
             return false;
         }
     };
@@ -179,7 +189,12 @@ export default function PaymentScreen({ navigation, route }) {
 
     const handlePhoneUpdate = async () => {
         if (!tempPhone.trim()) {
-            Alert.alert('Error', 'Please enter a valid phone number');
+            Toast.show({
+                type: 'error',
+                text1: 'Error',
+                text2: 'Please enter a valid phone number',
+                position: 'top',
+            });
             return;
         }
 
@@ -195,7 +210,12 @@ export default function PaymentScreen({ navigation, route }) {
     const selectImage = async () => {
         const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (!permissionResult.granted) {
-            return Alert.alert("Permission Denied", "You need to allow access to upload receipt.");
+            return Toast.show({
+                type: 'error',
+                text1: 'Permission Denied',
+                text2: 'You need to allow access to upload receipt.',
+                position: 'top',
+            });
         }
 
         const result = await ImagePicker.launchImageLibraryAsync({
@@ -212,19 +232,39 @@ export default function PaymentScreen({ navigation, route }) {
     const placeOrder = async () => {
         // Validation
         if (!selectedMethod) {
-            return Alert.alert("Select Payment Method", "Please choose a payment method.");
+            return Toast.show({
+                type: 'error',
+                text1: 'Select Payment Method',
+                text2: 'Please choose a payment method.',
+                position: 'top',
+            });
         }
 
         if (selectedMethod === 'online' && !receiptImage) {
-            return Alert.alert("Upload Receipt", "Receipt is required for online payment.");
+            return Toast.show({
+                type: 'error',
+                text1: 'Upload Receipt',
+                text2: 'Receipt is required for online payment.',
+                position: 'top',
+            });
         }
 
         if (!user?.address) {
-            return Alert.alert("Select Address", "Please select a delivery address.");
+            return Toast.show({
+                type: 'error',
+                text1: 'Select Address',
+                text2: 'Please select a delivery address.',
+                position: 'top',
+            });
         }
 
         if (!selectedPhone) {
-            return Alert.alert("Phone Required", "Please add a contact phone number.");
+            return Toast.show({
+                type: 'error',
+                text1: 'Phone Required',
+                text2: 'Please add a contact phone number.',
+                position: 'top',
+            });
         }
 
         setLoading(true);
@@ -247,32 +287,33 @@ export default function PaymentScreen({ navigation, route }) {
 
             if (result) {
                 refetchCart();
-
-                Alert.alert(
-                    "Order Placed Successfully!",
-                    `Your order has been placed with ${selectedMethod.toUpperCase()} payment.\nTotal: Rs${finalTotal.toFixed(2)}`,
-                    [
-                        {
-                            text: "OK",
-                            onPress: () => {
-                                navigation.reset({
-                                    index: 0,
-                                    routes: [{ name: 'MainDrawer' }],
-                                });
-                            }
-                        }
-                    ]
-                );
+                Toast.show({
+                    type: 'success',
+                    text1: 'Order Placed Successfully!',
+                    text2: `Your order has been placed with ${selectedMethod.toUpperCase()} payment.\nTotal: Rs${finalTotal.toFixed(2)}`,
+                    position: 'top',
+                });
+                navigation.reset({
+                    index: 0,
+                    routes: [{ name: 'MainDrawer' }],
+                });
             } else {
-                Alert.alert(
-                    "Order Failed",
-                    checkoutError || "Failed to place order. Please try again."
-                );
+                Toast.show({
+                    type: 'error',
+                    text1: 'Order Failed',
+                    text2: checkoutError || "Failed to place order. Please try again.",
+                    position: 'top',
+                });
             }
 
         } catch (error) {
             console.error('Checkout error:', error);
-            Alert.alert("Error", "Failed to place order. Please try again.");
+            Toast.show({
+                type: 'error',
+                text1: 'Error',
+                text2: 'Failed to place order. Please try again.',
+                position: 'top',
+            });
         } finally {
             setLoading(false);
         }

@@ -27,6 +27,18 @@ import Animated, {
     useAnimatedScrollHandler
 } from 'react-native-reanimated';
 import appColors from '../colors/appColors';
+
+// Import Skeleton Components
+import {
+    HeaderSkeleton,
+    SearchBarSkeleton,
+    CategoriesSkeleton,
+    BannerSkeleton,
+    DealsSkeleton,
+    ProductsSkeleton,
+    HomePageSkeleton
+} from '../skeletons/SkeletonComponents';
+
 const { width } = Dimensions.get('window');
 
 const Home = ({ navigation }) => {
@@ -109,18 +121,15 @@ const Home = ({ navigation }) => {
                         <Text style={styles.productPrice}>Rs {item.bestPrice.toFixed(2)}</Text>
                     )}
                 </View>
-                <TouchableOpacity style={styles.productAddBtn}>
-                    <Text style={styles.productAddText}>Add to Cart</Text>
-                </TouchableOpacity>
+                <View style={styles.productAddBtn}>
+                    <Text style={styles.productAddText}>View</Text>
+                </View>
             </TouchableOpacity>
         );
 
+        // Show skeleton while loading
         if (categoryLoading) {
-            return (
-                <View style={styles.categoryLoadingContainer}>
-                    <ActivityIndicator size="small" color={appColors.darkerBg} />
-                </View>
-            );
+            return <ProductsSkeleton title={title} />;
         }
 
         if (!categoryProducts || categoryProducts.length === 0) {
@@ -218,18 +227,13 @@ const Home = ({ navigation }) => {
         const percentage = Math.round((savings / originalPrice) * 100);
         return { savings: formatPrice(savings), percentage };
     };
-    //|| homeConfigLoading
+
+    // Show full page skeleton while initial data is loading
     if (categoriesLoading || dealsLoading || saleProductsLoading) {
-        return (
-            <View style={styles.loadingContainer}>
-                <Animated.View style={animatedPulseStyle}>
-                    <ActivityIndicator size="large" color={appColors.darkerBg} />
-                </Animated.View>
-                <Text style={styles.loadingText}>Loading amazing deals...</Text>
-            </View>
-        );
+        return <HomePageSkeleton />;
     }
-    // || homeConfigError
+
+    // Show error state
     if (categoriesError || dealsError || saleProductsError) {
         return (
             <View style={styles.errorContainer}>
@@ -241,7 +245,7 @@ const Home = ({ navigation }) => {
                         refetchCategories();
                         refetchDeals();
                         refetchSaleProducts();
-                        refetchHomeConfig();
+                        // refetchHomeConfig();
                     }}
                 >
                     <Text style={styles.retryText}>Try Again</Text>
@@ -371,21 +375,25 @@ const Home = ({ navigation }) => {
             onScroll={scrollHandler}
             scrollEventThrottle={16}
         >
-            {/* Animated Header */}
-            <Animated.View style={[styles.header, animatedHeaderStyle]}>
-                <View>
-                    <Text style={styles.locationTitle}>Hello! 👋</Text>
-                    <Text style={styles.locationText}>
-                        {user?.address?.split("/")[0]?.trim() || 'Select Location'}
-                    </Text>
-                </View>
-                <TouchableOpacity style={styles.cartButton} onPress={() => navigation.navigate("CartTab")}>
-                    <Feather name="shopping-cart" size={22} color="#000" />
-                    <View style={styles.cartBadge}>
-                        <Text style={styles.cartBadgeText}>3</Text>
+            {/* Header - Show skeleton if user data is still loading */}
+            {!user ? (
+                <HeaderSkeleton />
+            ) : (
+                <Animated.View style={[styles.header, animatedHeaderStyle]}>
+                    <View>
+                        <Text style={styles.locationTitle}>Hello! 👋</Text>
+                        <Text style={styles.locationText}>
+                            {user?.address?.split("/")[0]?.trim() || 'Select Location'}
+                        </Text>
                     </View>
-                </TouchableOpacity>
-            </Animated.View>
+                    <TouchableOpacity style={styles.cartButton} onPress={() => navigation.navigate("CartTab")}>
+                        <Feather name="shopping-cart" size={22} color="#000" />
+                        <View style={styles.cartBadge}>
+                            <Text style={styles.cartBadgeText}>3</Text>
+                        </View>
+                    </TouchableOpacity>
+                </Animated.View>
+            )}
 
             {/* Enhanced Search Bar */}
             <View style={styles.searchContainer}>

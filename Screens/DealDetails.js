@@ -14,6 +14,7 @@ import {
     Animated,
 } from 'react-native';
 import { MaterialIcons, Feather, Ionicons } from '@expo/vector-icons';
+import Toast from 'react-native-toast-message';
 import { LinearGradient } from 'expo-linear-gradient';
 import useGet from '../hooks/useGet'; // Adjust import path as needed
 import usePost from '../hooks/usePost';
@@ -52,7 +53,12 @@ const DealDetails = ({ navigation, route }) => {
         }, true);
 
         if (result) {
-            Alert.alert('Success', 'Item added to cart!');
+            Toast.show({
+                type: 'success',
+                text1: 'Added to Cart',
+                text2: `${product.name} has been added to your cart.`,
+                position: 'top',
+            });
         }
     };
 
@@ -63,7 +69,12 @@ const DealDetails = ({ navigation, route }) => {
         }, true);
 
         if (result) {
-            Alert.alert('Success', 'Deal added to cart!');
+            Toast.show({
+                type: 'success',
+                text1: 'Deal Added',
+                text2: 'The deal has been added to your cart.',
+                position: 'top',
+            });
         }
     };
 

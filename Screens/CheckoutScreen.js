@@ -8,7 +8,6 @@ import {
     TouchableOpacity,
     FlatList,
     Modal,
-    Alert,
     ActivityIndicator
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -17,7 +16,9 @@ import usePost from '../hooks/usePost';
 import usePatch from '../hooks/usePatch';
 import useDelete from '../hooks/useDelete';
 import axios from 'axios';
+import { CartPageSkeleton } from '../skeletons/CartPageSkeleton';
 import appColors from '../colors/appColors';
+import Toast from 'react-native-toast-message';
 
 const baseUrl = 'https://hajverystorebackend.onrender.com/api';
 
@@ -28,23 +29,121 @@ export default function CheckoutScreen() {
     const { patch, loading: patchLoading } = usePatch();
     const { deleteRequest, loading: deleteLoading } = useDelete();
 
+    // Local state for cart items to avoid full re-renders
+    const [localCartItems, setLocalCartItems] = useState([]);
+    const [localSummary, setLocalSummary] = useState(null);
     const [recommendations, setRecommendations] = useState([]);
     const [loadingRecommendations, setLoadingRecommendations] = useState(false);
 
+    // Initialize local state when cart data is loaded
+    useEffect(() => {
+        if (cartData?.cart) {
+            setLocalCartItems(cartData.cart);
+            setLocalSummary(cartData.summary);
+        }
+    }, [cartData]);
+
     const cartCategories = useMemo(() => {
-        if (!cartData?.cart) return [];
-        const categories = cartData.cart.map(item => {
+        if (!localCartItems || localCartItems.length === 0) return [];
+        const categories = localCartItems.map(item => {
             if (item.itemType === 'product') {
                 return item.product.brand;
             } else if (item.itemType === 'deal') {
-                // Get brands from deal products
                 return item.deal.products.map(product => product.brand);
             }
             return null;
         }).flat().filter(Boolean);
 
         return [...new Set(categories)];
-    }, [cartData]);
+    }, [localCartItems]);
+
+    // Optimistic update for quantity changes
+    const updateLocalQuantity = (cartItemId, newQuantity) => {
+        setLocalCartItems(prevItems => {
+            const updatedItems = prevItems.map(item => {
+                if (item._id === cartItemId) {
+                    return { ...item, quantity: newQuantity };
+                }
+                return item;
+            });
+
+            // Update summary as well
+            const newTotalQuantity = updatedItems.reduce((sum, item) => sum + item.quantity, 0);
+            const newTotal = updatedItems.reduce((sum, item) => {
+                if (item.itemType === 'deal') {
+                    return sum + (item.deal.dealPrice * item.quantity);
+                } else {
+                    return sum + (item.variant.currentPrice * item.quantity);
+                }
+            }, 0);
+
+            setLocalSummary(prev => ({
+                ...prev,
+                totalQuantity: newTotalQuantity,
+                total: newTotal
+            }));
+
+            return updatedItems;
+        });
+    };
+
+    // Optimistic removal from cart
+    const removeFromLocalCart = (cartItemId) => {
+        setLocalCartItems(prevItems => {
+            const filteredItems = prevItems.filter(item => item._id !== cartItemId);
+
+            // Update summary
+            const newTotalQuantity = filteredItems.reduce((sum, item) => sum + item.quantity, 0);
+            const newTotal = filteredItems.reduce((sum, item) => {
+                if (item.itemType === 'deal') {
+                    return sum + (item.deal.dealPrice * item.quantity);
+                } else {
+                    return sum + (item.variant.currentPrice * item.quantity);
+                }
+            }, 0);
+
+            setLocalSummary(prev => ({
+                ...prev,
+                totalQuantity: newTotalQuantity,
+                total: newTotal
+            }));
+
+            return filteredItems;
+        });
+    };
+
+    // Add new item to local cart
+    const addToLocalCart = (product, variantName = 'Default') => {
+        const newItem = {
+            _id: `temp_${Date.now()}`, // Temporary ID
+            itemType: 'product',
+            product: product,
+            variant: product.variants.find(v => v.name === variantName) || product.variants[0],
+            quantity: 1
+        };
+
+        setLocalCartItems(prevItems => {
+            const updatedItems = [...prevItems, newItem];
+
+            // Update summary
+            const newTotalQuantity = updatedItems.reduce((sum, item) => sum + item.quantity, 0);
+            const newTotal = updatedItems.reduce((sum, item) => {
+                if (item.itemType === 'deal') {
+                    return sum + (item.deal.dealPrice * item.quantity);
+                } else {
+                    return sum + (item.variant.currentPrice * item.quantity);
+                }
+            }, 0);
+
+            setLocalSummary(prev => ({
+                ...prev,
+                totalQuantity: newTotalQuantity,
+                total: newTotal
+            }));
+
+            return updatedItems;
+        });
+    };
 
     useFocusEffect(
         useCallback(() => {
@@ -71,53 +170,79 @@ export default function CheckoutScreen() {
         };
 
         fetchRecommendations();
-    }, [cartCategories, cartData]);
+    }, [cartCategories]);
 
     const removeFromCart = async (cartItemId) => {
-        const result = await deleteRequest(`/api/cart/remove/${cartItemId}`, true);
-        if (result) {
-            refetchCart(); // Refresh cart data
+        // Optimistically update UI first
+        removeFromLocalCart(cartItemId);
+
+        try {
+            const result = await deleteRequest(`/api/cart/remove/${cartItemId}`, true);
+            if (!result) {
+                // If API call fails, refetch to restore correct state
+                refetchCart();
+            }
+        } catch (error) {
+            // If error occurs, refetch to restore correct state
+            refetchCart();
         }
     };
 
     const updateQuantity = async (cartItemId, newQuantity) => {
         if (newQuantity <= 0) {
-            Alert.alert(
-                'Remove Item',
-                'Do you want to remove this item from cart?',
-                [
-                    { text: 'Cancel', style: 'cancel' },
-                    {
-                        text: 'Remove',
-                        style: 'destructive',
-                        onPress: () => removeFromCart(cartItemId)
-                    }
-                ]
-            );
+            Toast.show({
+                type: 'info',
+                text1: 'Remove Item',
+                text2: 'Item has been removed from your cart',
+                position: 'top',
+            });
+            removeFromCart(cartItemId);
             return;
         }
 
-        updateCartQuantity(cartItemId, newQuantity);
-    };
+        // Optimistically update UI first
+        updateLocalQuantity(cartItemId, newQuantity);
 
-    const updateCartQuantity = async (cartItemId, quantity) => {
-        const result = await patch(`/api/cart/update/${cartItemId}`, { quantity });
-        if (result) {
-            refetchCart(); // Refresh cart data
+        try {
+            const result = await patch(`/api/cart/update/${cartItemId}`, { quantity: newQuantity });
+            if (!result) {
+                // If API call fails, refetch to restore correct state
+                refetchCart();
+            }
+        } catch (error) {
+            // If error occurs, refetch to restore correct state
+            refetchCart();
         }
     };
 
     const addToCart = async (product, variantName = 'Default') => {
-        const result = await post('/api/cart/add', {
-            itemType: 'product',
-            productId: product._id,
-            quantity: 1,
-            variantName: variantName
-        }, true);
+        // Optimistically update UI first
+        addToLocalCart(product, variantName);
 
-        if (result) {
-            Alert.alert('Success', 'Item added to cart!');
-            refetchCart(); // Refresh cart data
+        try {
+            const result = await post('/api/cart/add', {
+                itemType: 'product',
+                productId: product._id,
+                quantity: 1,
+                variantName: variantName
+            }, true);
+
+            if (result) {
+                Toast.show({
+                    type: 'success',
+                    text1: 'Item Added',
+                    text2: 'The item has been added to your cart.',
+                    position: 'top',
+                });
+                // Refetch to get the correct item ID from server
+                refetchCart();
+            } else {
+                // If API call fails, refetch to restore correct state
+                refetchCart();
+            }
+        } catch (error) {
+            // If error occurs, refetch to restore correct state
+            refetchCart();
         }
     };
 
@@ -170,8 +295,6 @@ export default function CheckoutScreen() {
                                     Save Rs{item.deal.savings.toFixed(2)} ({item.deal.savingsPercentage}% off)
                                 </Text>
                             </View>
-
-
                         </View>
                     </View>
                 </View>
@@ -253,12 +376,9 @@ export default function CheckoutScreen() {
         </TouchableOpacity>
     );
 
-    if (cartLoading) {
+    if (cartLoading && localCartItems.length === 0) {
         return (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                <ActivityIndicator size="large" color={appColors.darkerBg} />
-                <Text>Loading cart...</Text>
-            </View>
+            <CartPageSkeleton itemCount={3} />
         );
     }
 
@@ -278,7 +398,7 @@ export default function CheckoutScreen() {
         );
     }
 
-    if (!cartData?.cart || cartData.cart.length === 0) {
+    if (!localCartItems || localCartItems.length === 0) {
         return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
                 <Text style={{ fontSize: 18, color: '#777' }}>Your cart is empty</Text>
@@ -295,7 +415,7 @@ export default function CheckoutScreen() {
     return (
         <ScrollView style={styles.container}>
             {/* Cart Items */}
-            {cartData.cart.map(renderCartItem)}
+            {localCartItems.map(renderCartItem)}
 
             {/* Recommendation Section */}
             <Text style={styles.subheading}>Before you Checkout</Text>
@@ -318,46 +438,48 @@ export default function CheckoutScreen() {
             </TouchableOpacity>
 
             {/* Summary Section */}
-            <View style={styles.summary}>
-                <View style={styles.summaryRow}>
-                    <Text style={styles.summaryText}>Items ({cartData.summary.totalQuantity}):</Text>
-                    <Text style={styles.summaryText}>Rs{cartData.summary.total.toFixed(2)}</Text>
-                </View>
-
-                {cartData.summary.breakdown && (
-                    <View style={styles.breakdownContainer}>
-                        <View style={styles.summaryRow}>
-                            <Text style={styles.breakdownText}>• Products: {cartData.summary.breakdown.products}</Text>
-                        </View>
-                        <View style={styles.summaryRow}>
-                            <Text style={styles.breakdownText}>• Deals: {cartData.summary.breakdown.deals}</Text>
-                        </View>
+            {localSummary && (
+                <View style={styles.summary}>
+                    <View style={styles.summaryRow}>
+                        <Text style={styles.summaryText}>Items ({localSummary.totalQuantity}):</Text>
+                        <Text style={styles.summaryText}>Rs{localSummary.total.toFixed(2)}</Text>
                     </View>
-                )}
 
-                <View style={styles.summaryRow}>
-                    <Text style={styles.summaryText}>Discount:</Text>
-                    <Text style={styles.summaryText}>Rs0.00</Text>
+                    {localSummary.breakdown && (
+                        <View style={styles.breakdownContainer}>
+                            <View style={styles.summaryRow}>
+                                <Text style={styles.breakdownText}>• Products: {localSummary.breakdown.products}</Text>
+                            </View>
+                            <View style={styles.summaryRow}>
+                                <Text style={styles.breakdownText}>• Deals: {localSummary.breakdown.deals}</Text>
+                            </View>
+                        </View>
+                    )}
+
+                    <View style={styles.summaryRow}>
+                        <Text style={styles.summaryText}>Discount:</Text>
+                        <Text style={styles.summaryText}>Rs0.00</Text>
+                    </View>
+
+                    <View style={styles.summaryRow}>
+                        <Text style={styles.summaryText}>Delivery:</Text>
+                        <Text style={{ color: 'green' }}>Rs 50</Text>
+                    </View>
+
+                    <Text style={styles.summaryTotal}>
+                        Grand Total: Rs{localSummary.total.toFixed(2)}
+                    </Text>
                 </View>
-
-                <View style={styles.summaryRow}>
-                    <Text style={styles.summaryText}>Delivery:</Text>
-                    <Text style={{ color: 'green' }}>Rs 50</Text>
-                </View>
-
-                <Text style={styles.summaryTotal}>
-                    Grand Total: Rs{cartData.summary.total.toFixed(2)}
-                </Text>
-            </View>
+            )}
 
             {/* Place Order Button */}
             <TouchableOpacity
                 style={[styles.checkoutBtn, (patchLoading || postLoading || deleteLoading) && { opacity: 0.7 }]}
                 disabled={patchLoading || postLoading || deleteLoading}
-                onPress={() => navigation.navigate("Payment", { total: cartData.summary.total.toFixed(2) })}
+                onPress={() => navigation.navigate("Payment", { total: localSummary?.total.toFixed(2) })}
             >
                 <Text style={styles.checkoutText}>
-                    Rs{cartData.summary.total.toFixed(2)}   |   Place Order
+                    Rs{localSummary?.total.toFixed(2)}   |   Place Order
                 </Text>
             </TouchableOpacity>
         </ScrollView>

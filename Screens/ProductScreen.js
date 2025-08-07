@@ -9,8 +9,8 @@ import {
     Modal,
     Dimensions,
     ActivityIndicator,
-    Alert,
 } from 'react-native';
+import Toast from 'react-native-toast-message';
 import { Feather, AntDesign, MaterialIcons } from '@expo/vector-icons';
 import Animated, {
     useSharedValue,
@@ -47,14 +47,14 @@ const ProductScreen = ({ route, navigation }) => {
         }
     }, [product]);
 
-    // Show error alert when cart error occurs
     useEffect(() => {
         if (cartError) {
-            Alert.alert(
-                'Error Adding to Cart',
-                cartError,
-                [{ text: 'OK', style: 'default' }]
-            );
+            Toast.show({
+                type: 'error',
+                text1: 'Error Adding to Cart',
+                text2: cartError,
+                position: 'top',
+            });
         }
     }, [cartError]);
 
@@ -146,7 +146,12 @@ const ProductScreen = ({ route, navigation }) => {
     // Add to cart function
     const handleAddToCart = async () => {
         if (!isInStock()) {
-            Alert.alert('Out of Stock', 'This product is currently out of stock.');
+            Toast.show({
+                type: 'error',
+                text1: 'Out of Stock',
+                text2: 'This product is currently out of stock.',
+                position: 'top',
+            });
             return;
         }
 
@@ -163,33 +168,22 @@ const ProductScreen = ({ route, navigation }) => {
             const response = await addToCart('/api/cart/add', cartData, true); // useAuth = true for authenticated request
 
             if (response) {
-                Alert.alert(
-                    'Success!',
-                    `${quantity} ${quantity === 1 ? 'item' : 'items'} added to cart`,
-                    [
-                        {
-                            text: 'Continue Shopping',
-                            style: 'default'
-                        },
-                        {
-                            text: 'View Cart',
-                            style: 'default',
-                            onPress: () => {
-                                // Navigate to cart screen if available
-                                // navigation.navigate('Cart');
-                                console.log('Navigate to cart screen');
-                            }
-                        }
-                    ]
-                );
+                Toast.show({
+                    type: 'success',
+                    text1: 'Success!',
+                    text2: `${quantity} ${quantity === 1 ? 'item' : 'items'} added to cart`,
+                    position: 'top',
+                });
+
             }
         } catch (err) {
             console.error('Error adding to cart:', err);
-            Alert.alert(
-                'Error',
-                'Failed to add item to cart. Please try again.',
-                [{ text: 'OK', style: 'default' }]
-            );
+            Toast.show({
+                type: 'error',
+                text1: 'Error Adding to Cart',
+                text2: 'Failed to add item to cart. Please try again.',
+                position: 'top',
+            });
         }
     };
 

@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import OtpModal from '../Modals/OtpModal';
 import usePost from '../hooks/usePost';
-import { Eye, EyeOff } from 'lucide-react-native';
+// import { Eye, EyeOff } from 'lucide-react-native';
 import appColors from '../colors/appColors';
 
 const UserAuthScreen = ({ route, navigation }) => {
@@ -167,7 +167,7 @@ const UserAuthScreen = ({ route, navigation }) => {
                         onChangeText={setPassword}
                     />
                     <TouchableOpacity onPress={() => setHidePassword(!hidePassword)}>
-                        {hidePassword ? <EyeOff size={20} color="#777" /> : <Eye size={20} color="#777" />}
+                        {/* {hidePassword ? <EyeOff size={20} color="#777" /> : <Eye size={20} color="#777" />} */}
                     </TouchableOpacity>
                 </View>
 
@@ -180,7 +180,7 @@ const UserAuthScreen = ({ route, navigation }) => {
                         onChangeText={setConfirmPassword}
                     />
                     <TouchableOpacity onPress={() => setHideConfirmPassword(!hideConfirmPassword)}>
-                        {hideConfirmPassword ? <EyeOff size={20} color="#777" /> : <Eye size={20} color="#777" />}
+                        {/* {hideConfirmPassword ? <EyeOff size={20} color="#777" /> : <Eye size={20} color="#777" />} */}
                     </TouchableOpacity>
                 </View>
 
