@@ -7,34 +7,25 @@ import {
     Image,
     TouchableOpacity,
     FlatList,
-    ActivityIndicator,
     Dimensions
 } from 'react-native';
 import { Ionicons, Feather, MaterialIcons } from '@expo/vector-icons';
+import * as Device from 'expo-device';
+import * as Notifications from 'expo-notifications';
+
 import useGet from '../hooks/useGet';
 import { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
-    withRepeat,
-    withTiming,
     interpolate,
-    withSpring,
-    withSequence,
-    Easing,
-    runOnJS,
     useAnimatedScrollHandler
 } from 'react-native-reanimated';
 import appColors from '../colors/appColors';
-
-// Import Skeleton Components
+import usePut from '../hooks/usePut';
 import {
     HeaderSkeleton,
-    SearchBarSkeleton,
-    CategoriesSkeleton,
-    BannerSkeleton,
-    DealsSkeleton,
     ProductsSkeleton,
     HomePageSkeleton
 } from '../skeletons/SkeletonComponents';
@@ -46,6 +37,7 @@ const Home = ({ navigation }) => {
     const { data: dealsData, loading: dealsLoading, error: dealsError, refetch: refetchDeals } = useGet('/deals');
     const { data: saleProductsData, loading: saleProductsLoading, error: saleProductsError, refetch: refetchSaleProducts } = useGet('/products');
     // const { data: homeConfigData, loading: homeConfigLoading, error: homeConfigError, refetch: refetchHomeConfig } = useGet('/admin/home-config'); // Admin endpoint for home page configuration
+    const { put: updateFcmToken, loading: updateLoading, error: updateError } = usePut();
 
     const [categories, setCategories] = useState([]);
     const [deals, setDeals] = useState([]);
@@ -60,6 +52,59 @@ const Home = ({ navigation }) => {
     const pulseAnimation = useSharedValue(0);
     const shimmerAnimation = useSharedValue(0);
     const headerOpacity = useSharedValue(1);
+
+
+    const registerForPushNotificationsAsync = async () => {
+        if (!Device.isDevice) {
+            Alert.alert('Must use physical device');
+            return;
+        }
+        const { status: existingStatus } = await Notifications.getPermissionsAsync();
+        let finalStatus = existingStatus;
+        if (existingStatus !== 'granted') {
+            const { status } = await Notifications.requestPermissionsAsync();
+            finalStatus = status;
+        }
+        if (finalStatus !== 'granted') {
+            Alert.alert('Notification permissions not granted');
+            return;
+        }
+        try {
+            const tokenData = await Notifications.getDevicePushTokenAsync();
+            return tokenData.data;
+        } catch (err) {
+            Alert.alert('Error fetching FCM token', err.message);
+        }
+    };
+
+    useEffect(() => {
+        const updateFcmTokenOnServer = async () => {
+            try {
+                const token = await registerForPushNotificationsAsync();
+                console.log('FCM Token:', token);
+
+                if (token && user) {
+                    // Update FCM token using the put hook
+                    const response = await updateFcmToken('/api/user/update-profile', {
+                        fcmToken: token,
+                    }, true);
+
+                    if (response) {
+                        console.log('FCM Token updated successfully on server');
+                    } else if (updateError) {
+                        console.error('Failed to update FCM token:', updateError);
+                    }
+                }
+            } catch (error) {
+                console.error('Error updating FCM token:', error);
+            }
+        };
+
+        // Only update FCM token if user is logged in
+        if (user) {
+            updateFcmTokenOnServer();
+        }
+    }, [user]);
 
     useEffect(() => {
         if (categoriesData && categoriesData.categories) {

@@ -415,13 +415,13 @@ const MainDrawerNavigator = () => {
                     drawerLabel: 'Home',
                 }}
             />
-            <Drawer.Screen
+            {/* <Drawer.Screen
                 name="EditProfile"
                 component={EditProfileScreen}
                 options={{
                     drawerLabel: 'Edit Profile',
                 }}
-            />
+            /> */}
             <Drawer.Screen
                 name="Orders"
                 component={OrderScreen}

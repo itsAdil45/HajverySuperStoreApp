@@ -165,6 +165,7 @@ const UserAuthScreen = ({ route, navigation }) => {
                         value={password}
                         secureTextEntry={hidePassword}
                         onChangeText={setPassword}
+                        placeholderTextColor="#777"
                     />
                     <TouchableOpacity onPress={() => setHidePassword(!hidePassword)}>
                         {/* {hidePassword ? <EyeOff size={20} color="#777" /> : <Eye size={20} color="#777" />} */}
@@ -176,6 +177,7 @@ const UserAuthScreen = ({ route, navigation }) => {
                         style={styles.inputPassword}
                         placeholder="Confirm New Password"
                         value={confirmPassword}
+                        placeholderTextColor="#777"
                         secureTextEntry={hideConfirmPassword}
                         onChangeText={setConfirmPassword}
                     />
@@ -188,6 +190,7 @@ const UserAuthScreen = ({ route, navigation }) => {
                     <TextInput
                         style={styles.inputOtp}
                         placeholder="Enter OTP"
+                        placeholderTextColor="#777"
                         value={otp}
                         keyboardType="numeric"
                         maxLength={6}

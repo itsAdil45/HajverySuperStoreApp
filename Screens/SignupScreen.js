@@ -72,7 +72,6 @@ const SignupScreen = ({ navigation, route }) => {
         }
     };
 
-    // Initialize FCM token
     useEffect(() => {
         registerForPushNotificationsAsync().then((token) => {
             if (token) {

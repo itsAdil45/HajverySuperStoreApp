@@ -17,7 +17,8 @@ import { MaterialIcons, Feather, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import useGet from '../hooks/useGet'; // Adjust import path as needed
 import appColors from '../colors/appColors';
-
+import { AllDealsSkeleton } from '../skeletons/DealSkeleton';
+import { DealsSkeleton } from '../skeletons/SkeletonComponents';
 const { width, height } = Dimensions.get('window');
 
 const AllDeals = ({ navigation }) => {
@@ -25,12 +26,16 @@ const AllDeals = ({ navigation }) => {
     const [deals, setDeals] = useState([]);
     const [refreshing, setRefreshing] = useState(false);
     const [scrollY] = useState(new Animated.Value(0));
+    const [isInitialLoad, setIsInitialLoad] = useState(true);
 
     useEffect(() => {
         if (dealsData && dealsData.deals) {
             setDeals(dealsData.deals);
+            setIsInitialLoad(false);
+        } else if (!dealsLoading) {
+            setIsInitialLoad(false);
         }
-    }, [dealsData]);
+    }, [dealsData, dealsLoading]);
 
     const formatPrice = (price) => {
         return `$${price.toFixed(2)}`;
@@ -205,15 +210,9 @@ const AllDeals = ({ navigation }) => {
         </View>
     );
 
-    if (dealsLoading && deals.length === 0) {
+    if (dealsLoading && deals.length === 0 || isInitialLoad) {
         return (
-            <View style={styles.loadingContainer}>
-                <View style={styles.loadingContent}>
-                    <ActivityIndicator size="large" color={appColors.darkerBg} />
-                    <Text style={styles.loadingText}>Discovering amazing deals...</Text>
-                    <Text style={styles.loadingSubtext}>This won't take long!</Text>
-                </View>
-            </View>
+            <AllDealsSkeleton itemCount={5} />
         );
     }
 
@@ -230,7 +229,7 @@ const AllDeals = ({ navigation }) => {
                 <Text style={styles.errorText}>We couldn't load the deals right now</Text>
                 <TouchableOpacity style={styles.retryButton} onPress={refetch}>
                     <LinearGradient
-                        colors={['#00C851', '#00A843']}
+                        colors={[appColors.darkerBg, appColors.lightBg]}
                         style={styles.retryGradient}
                     >
                         <Ionicons name="refresh" size={16} color="#fff" />

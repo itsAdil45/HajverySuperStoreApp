@@ -4,6 +4,7 @@ import { View, Text, FlatList, TouchableOpacity, Image, ActivityIndicator, Style
 import { Feather } from '@expo/vector-icons';
 import useGet from '../hooks/useGet';
 import appColors from '../colors/appColors';
+import { CategoryProductsSkeleton } from '../skeletons/CategorySkeleton';
 
 const CategoryProductsScreen = ({ navigation, route }) => {
     const { mainCategoryID } = route.params || {};
@@ -24,6 +25,7 @@ const CategoryProductsScreen = ({ navigation, route }) => {
         selectedSubcat ? `/products?category=${encodeURIComponent(selectedSubcat)}` : null,
         false // Don't run on mount
     );
+    const isLoading = loading || (selectedSubcat && productsLoading);
 
     useEffect(() => {
         if (data && data.subCategories) {
@@ -118,23 +120,10 @@ const CategoryProductsScreen = ({ navigation, route }) => {
     );
 
     // Handle loading state
-    if (loading) {
-        return (
-            <View style={styles.container}>
-                <View style={styles.header}>
-                    {/* <TouchableOpacity onPress={() => navigation.goBack()}>
-                        <Feather name="chevron-left" size={24} />
-                    </TouchableOpacity> */}
-                    <Text style={styles.headerTitle}>Loading...</Text>
-                    <Feather name="loader" size={20} />
-                </View>
-                <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color={appColors.darkerBg} />
-                    <Text style={styles.loadingText}>Loading subcategories...</Text>
-                </View>
-            </View>
-        );
+    if (isLoading) {
+        return <CategoryProductsSkeleton />;
     }
+
 
     // Handle error state
     if (error) {
@@ -159,15 +148,6 @@ const CategoryProductsScreen = ({ navigation, route }) => {
 
     return (
         <View style={styles.container}>
-            {/* Header */}
-            {/* <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()}>
-                    <Feather name="chevron-left" size={24} />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>Categories</Text>
-                <Feather name="search" size={20} />
-            </View> */}
-
             <View style={styles.body}>
                 {/* Left Subcategory List */}
                 <FlatList
@@ -206,11 +186,6 @@ const CategoryProductsScreen = ({ navigation, route }) => {
                     {!selectedSubcat ? (
                         <View style={styles.emptyProductContainer}>
                             <Text style={styles.emptyText}>Select a subcategory to view products</Text>
-                        </View>
-                    ) : productsLoading ? (
-                        <View style={styles.loadingContainer}>
-                            <ActivityIndicator size="large" color={appColors.darkerBg} />
-                            <Text style={styles.loadingText}>Loading products...</Text>
                         </View>
                     ) : productsError ? (
                         <View style={styles.errorContainer}>

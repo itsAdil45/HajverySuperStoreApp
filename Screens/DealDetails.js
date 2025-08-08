@@ -19,10 +19,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import useGet from '../hooks/useGet'; // Adjust import path as needed
 import usePost from '../hooks/usePost';
 import appColors from '../colors/appColors';
-
+import { DealDetailsSkeleton } from '../skeletons/DealSkeleton';
 const { width, height } = Dimensions.get('window');
 
-// Extended color palette for the blue theme
 const themeColors = {
     ...appColors,
     primaryBlue: '#0e5aa6',
@@ -43,6 +42,7 @@ const DealDetails = ({ navigation, route }) => {
     const { data: dealData, loading, error, refetch } = useGet(`/deals/${dealId}`);
     const [deal, setDeal] = useState(null);
     const { post, loading: postLoading } = usePost();
+    const [isInitialLoad, setIsInitialLoad] = useState(true);
 
     const addToCart = async (product, variantName = 'Default') => {
         const result = await post('/api/cart/add', {
@@ -81,8 +81,11 @@ const DealDetails = ({ navigation, route }) => {
     useEffect(() => {
         if (dealData) {
             setDeal(dealData);
+            setIsInitialLoad(false);
+        } else if (!loading) {
+            setIsInitialLoad(false);
         }
-    }, [dealData]);
+    }, [dealData, loading]);
 
     const formatPrice = (price) => {
         return `Rs ${price.toFixed(2)}`;
@@ -181,16 +184,11 @@ const DealDetails = ({ navigation, route }) => {
         );
     };
 
-    if (loading) {
-        return (
-            <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color={themeColors.primaryBlue} />
-                <Text style={styles.loadingText}>Loading deal details...</Text>
-            </View>
-        );
+    if (isInitialLoad || loading) {
+        return <DealDetailsSkeleton />;
     }
 
-    if (error || !deal) {
+    if (error || (!loading && !deal)) {
         return (
             <View style={styles.errorContainer}>
                 <LinearGradient

@@ -12,7 +12,7 @@ import {
 import { Feather } from '@expo/vector-icons';
 import useGet from '../hooks/useGet';
 import appColors from '../colors/appColors';
-
+import { MainCategoriesSkeleton } from '../skeletons/MainCategoriesSkeleton';
 const MainCategoriesScreen = ({ navigation }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [appliedSearchQuery, setAppliedSearchQuery] = useState('');
@@ -70,21 +70,7 @@ const MainCategoriesScreen = ({ navigation }) => {
     );
 
     if (loading) {
-        return (
-            <View style={styles.container}>
-                <View style={styles.header}>
-                    {/* <TouchableOpacity onPress={() => navigation.goBack()}>
-                        <Feather name="chevron-left" size={24} color="#000" />
-                    </TouchableOpacity> */}
-                    {/* <Text style={styles.headerTitle}>All Categories</Text> */}
-                    <View style={{ width: 24 }} />
-                </View>
-                <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color={appColors.darkerBg} />
-                    <Text style={styles.loadingText}>Loading categories...</Text>
-                </View>
-            </View>
-        );
+        return <MainCategoriesSkeleton />;
     }
 
     if (error) {
