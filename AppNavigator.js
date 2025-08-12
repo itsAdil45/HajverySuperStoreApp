@@ -32,6 +32,7 @@ import CheckoutScreen from './Screens/CheckoutScreen';
 import LocationPickerScreen from './Screens/LocationPickerScreen';
 import PaymentScreen from './Screens/PaymentScreen';
 import OrderScreen from './Screens/OrderScreen';
+import OrderDetail from './Screens/OrderDetail';
 import EditProfileScreen from './Screens/EditProfileScreen';
 import MainCategoriesScreen from './Screens/MainCategoriesScreen';
 import SearchResultScreen from './Screens/SearchResultScreen';
@@ -447,6 +448,10 @@ const MainStackNavigator = () => {
                 name="MainDrawer"
                 component={MainDrawerNavigator}
                 options={{ headerShown: false }}
+            />
+            <Stack.Screen
+                name="OrderDetail"
+                component={OrderDetail}
             />
             <Stack.Screen
                 name="main Categories"

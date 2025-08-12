@@ -275,9 +275,9 @@ const SearchResultScreen = ({ route, navigation }) => {
                                 minimumValue={0}
                                 maximumValue={100}
                                 step={5}
-                                minimumTrackTintColor="#00C851"
+                                minimumTrackTintColor={appColors.Hover_Button}
                                 maximumTrackTintColor="#d3d3d3"
-                                thumbTintColor="#00C851"
+                                thumbTintColor={appColors.darkerBg}
                                 value={priceRange[1]}
                                 onValueChange={(value) => setPriceRange([priceRange[0], value])}
                             />
@@ -543,7 +543,7 @@ const styles = StyleSheet.create({
     activeFilter: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#00C851',
+        backgroundColor: appColors.darkerBg,
         borderRadius: 15,
         paddingHorizontal: 12,
         paddingVertical: 6,
@@ -560,7 +560,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     clearAllText: {
-        color: '#00C851',
+        color: appColors.Hover_Button,
         fontSize: 12,
         fontWeight: '500',
     },
@@ -608,7 +608,7 @@ const styles = StyleSheet.create({
     applyButton: {
         flex: 1,
         padding: 15,
-        backgroundColor: '#00C851',
+        backgroundColor: appColors.Primary_Button,
         borderRadius: 10,
         alignItems: 'center',
     },
@@ -650,7 +650,7 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     chipSelected: {
-        backgroundColor: '#00C851',
+        backgroundColor: appColors.darkerBg,
     },
     chipText: {
         fontSize: 14,
@@ -680,13 +680,13 @@ const styles = StyleSheet.create({
         marginRight: 10,
     },
     radioOuterSelected: {
-        borderColor: '#00C851',
+        borderColor: appColors.Hover_Button,
     },
     radioInner: {
         width: 10,
         height: 10,
         borderRadius: 5,
-        backgroundColor: '#00C851',
+        backgroundColor: appColors.Primary_Button,
     },
     radioLabel: {
         fontSize: 16,
@@ -705,7 +705,7 @@ const styles = StyleSheet.create({
         borderRadius: 5,
     },
     clearFiltersText: {
-        color: '#00C851',
+        color: appColors.Hover_Button,
     },
 });
 

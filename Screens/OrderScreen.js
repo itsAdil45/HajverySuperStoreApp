@@ -12,6 +12,7 @@ import {
 import { Feather, Ionicons } from '@expo/vector-icons';
 
 import useGet from '../hooks/useGet';
+import appColors from '../colors/appColors';
 
 export default function OrderScreen({ navigation }) {
     const [selectedTab, setSelectedTab] = useState('All');
@@ -25,7 +26,8 @@ export default function OrderScreen({ navigation }) {
 
     const handleOrderPress = (orderId) => {
         // Navigate to order details screen
-        navigation.navigate('OrderDetails', { orderId });
+        console.log("Navigating to OrderDetail with ID:", orderId);
+        navigation.navigate('OrderDetail', { orderId });
     };
 
     // Filter orders based on selected tab and status
@@ -132,11 +134,11 @@ export default function OrderScreen({ navigation }) {
             {(item.status === 'processing' || item.status === 'completed') && (
                 <View style={styles.actionRow}>
                     <TouchableOpacity style={styles.actionBtn} activeOpacity={0.7}>
-                        <Feather name='message-square' size={16} color="#22c55e" />
+                        <Feather name='message-square' size={16} color={appColors.Hover_Button} />
                         <Text style={styles.actionText}>Message</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.actionBtn} activeOpacity={0.7}>
-                        <Feather name='phone' size={16} color="#22c55e" />
+                        <Feather name='phone' size={16} color={appColors.Hover_Button} />
                         <Text style={styles.actionText}>Call</Text>
                     </TouchableOpacity>
                 </View>
@@ -155,7 +157,7 @@ export default function OrderScreen({ navigation }) {
                     <View style={styles.headerSpacer} />
                 </View>
                 <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color="#22c55e" />
+                    <ActivityIndicator size="large" color={appColors.darkerBg} />
                     <Text style={styles.loadingText}>Loading orders...</Text>
                 </View>
             </View>
@@ -288,7 +290,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#f3f4f6',
     },
     tabActive: {
-        backgroundColor: '#22c55e',
+        backgroundColor: appColors.Primary_Button,
     },
     tabText: {
         fontSize: 14,
@@ -410,7 +412,7 @@ const styles = StyleSheet.create({
     },
     actionText: {
         fontSize: 12,
-        color: '#22c55e',
+        color: appColors.Hover_Button,
         fontWeight: '500',
         marginLeft: 4,
     },

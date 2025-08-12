@@ -67,8 +67,15 @@ const LoginScreen = ({ navigation }) => {
                     placeholderTextColor="#777"
                     onChangeText={setPassword}
                 />
-                <TouchableOpacity onPress={() => setHidePassword(!hidePassword)}>
-                    {hidePassword ? <Feather name='eye-off' size={20} color="#777" /> : <Feather name='eye' size={20} color="#777" />}
+                <TouchableOpacity
+                    onPress={() => setHidePassword(!hidePassword)}
+                    style={styles.eyeIcon}  // Added for better touch area
+                >
+                    <Feather
+                        name={hidePassword ? 'eye-off' : 'eye'}
+                        size={20}
+                        color="#777"
+                    />
                 </TouchableOpacity>
             </View>
 
@@ -98,6 +105,9 @@ export default LoginScreen;
 
 
 const styles = StyleSheet.create({
+    eyeIcon: {
+        padding: 8,  // Add padding for better touch area
+    },
     container: {
         flex: 1,
         padding: 24,
@@ -138,6 +148,7 @@ const styles = StyleSheet.create({
     inputPassword: {
         flex: 1,
         fontSize: 16,
+        color: "#777",
         paddingVertical: 8,
     },
     forgotButton: {

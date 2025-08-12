@@ -38,7 +38,7 @@ const AllDeals = ({ navigation }) => {
     }, [dealsData, dealsLoading]);
 
     const formatPrice = (price) => {
-        return `$${price.toFixed(2)}`;
+        return `Rs ${price.toFixed(2)}`;
     };
 
     const calculateSavings = (originalPrice, dealPrice) => {

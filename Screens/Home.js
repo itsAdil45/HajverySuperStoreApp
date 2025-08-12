@@ -55,6 +55,10 @@ const Home = ({ navigation }) => {
 
 
     const registerForPushNotificationsAsync = async () => {
+        if (!user || user.role !== 'user') {
+            console.log('FCM token not updated: User is not a regular user');
+            return;
+        }
         if (!Device.isDevice) {
             Alert.alert('Must use physical device');
             return;
@@ -80,6 +84,10 @@ const Home = ({ navigation }) => {
     useEffect(() => {
         const updateFcmTokenOnServer = async () => {
             try {
+                if (!user || user.role !== 'user') {
+                    console.log('FCM token not updated: User is not a regular user');
+                    return;
+                }
                 const token = await registerForPushNotificationsAsync();
                 console.log('FCM Token:', token);
 
@@ -264,7 +272,7 @@ const Home = ({ navigation }) => {
     });
 
     const formatPrice = (price) => {
-        return `$${price.toFixed(2)}`;
+        return `Rs ${price.toFixed(2)}`;
     };
 
     const calculateSavings = (originalPrice, dealPrice) => {
@@ -433,9 +441,9 @@ const Home = ({ navigation }) => {
                     </View>
                     <TouchableOpacity style={styles.cartButton} onPress={() => navigation.navigate("CartTab")}>
                         <Feather name="shopping-cart" size={22} color="#000" />
-                        <View style={styles.cartBadge}>
+                        {/* <View style={styles.cartBadge}>
                             <Text style={styles.cartBadgeText}>3</Text>
-                        </View>
+                        </View> */}
                     </TouchableOpacity>
                 </Animated.View>
             )}

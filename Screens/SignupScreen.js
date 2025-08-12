@@ -49,56 +49,56 @@ const SignupScreen = ({ navigation, route }) => {
     const responseListener = useRef();
 
     // Register for push notifications
-    const registerForPushNotificationsAsync = async () => {
-        if (!Device.isDevice) {
-            Alert.alert('Must use physical device');
-            return;
-        }
-        const { status: existingStatus } = await Notifications.getPermissionsAsync();
-        let finalStatus = existingStatus;
-        if (existingStatus !== 'granted') {
-            const { status } = await Notifications.requestPermissionsAsync();
-            finalStatus = status;
-        }
-        if (finalStatus !== 'granted') {
-            Alert.alert('Notification permissions not granted');
-            return;
-        }
-        try {
-            const tokenData = await Notifications.getDevicePushTokenAsync();
-            return tokenData.data;
-        } catch (err) {
-            Alert.alert('Error fetching FCM token', err.message);
-        }
-    };
+    // const registerForPushNotificationsAsync = async () => {
+    //     if (!Device.isDevice) {
+    //         Alert.alert('Must use physical device');
+    //         return;
+    //     }
+    //     const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    //     let finalStatus = existingStatus;
+    //     if (existingStatus !== 'granted') {
+    //         const { status } = await Notifications.requestPermissionsAsync();
+    //         finalStatus = status;
+    //     }
+    //     if (finalStatus !== 'granted') {
+    //         Alert.alert('Notification permissions not granted');
+    //         return;
+    //     }
+    //     try {
+    //         const tokenData = await Notifications.getDevicePushTokenAsync();
+    //         return tokenData.data;
+    //     } catch (err) {
+    //         Alert.alert('Error fetching FCM token', err.message);
+    //     }
+    // };
 
-    useEffect(() => {
-        registerForPushNotificationsAsync().then((token) => {
-            if (token) {
-                setFcmToken(token);
-            }
-        });
+    // useEffect(() => {
+    //     registerForPushNotificationsAsync().then((token) => {
+    //         if (token) {
+    //             setFcmToken(token);
+    //         }
+    //     });
 
-        notificationListener.current =
-            Notifications.addNotificationReceivedListener((notification) => {
-                Alert.alert('🔔 Notification', notification.request.content.body);
-            });
+    //     notificationListener.current =
+    //         Notifications.addNotificationReceivedListener((notification) => {
+    //             Alert.alert('🔔 Notification', notification.request.content.body);
+    //         });
 
-        responseListener.current =
-            Notifications.addNotificationResponseReceivedListener((response) => {
-                console.log('User tapped notification:', response);
-            });
+    //     responseListener.current =
+    //         Notifications.addNotificationResponseReceivedListener((response) => {
+    //             console.log('User tapped notification:', response);
+    //         });
 
-        return () => {
-            // Updated cleanup using subscription.remove()
-            if (notificationListener.current) {
-                notificationListener.current.remove();
-            }
-            if (responseListener.current) {
-                responseListener.current.remove();
-            }
-        };
-    }, []);
+    //     return () => {
+    //         // Updated cleanup using subscription.remove()
+    //         if (notificationListener.current) {
+    //             notificationListener.current.remove();
+    //         }
+    //         if (responseListener.current) {
+    //             responseListener.current.remove();
+    //         }
+    //     };
+    // }, []);
 
     // Handle address from LocationPickerScreen
     useEffect(() => {
@@ -132,10 +132,10 @@ const SignupScreen = ({ navigation, route }) => {
             return;
         }
 
-        if (!fcmToken) {
-            Alert.alert('Error', 'FCM token not available. Please try again.');
-            return;
-        }
+        // if (!fcmToken) {
+        //     Alert.alert('Error', 'FCM token not available. Please try again.');
+        //     return;
+        // }
 
         const userData = {
             name,
@@ -143,7 +143,7 @@ const SignupScreen = ({ navigation, route }) => {
             phone,
             password,
             address,
-            fcmToken
+            // fcmToken
         };
 
         console.log('Registering User:', userData);
