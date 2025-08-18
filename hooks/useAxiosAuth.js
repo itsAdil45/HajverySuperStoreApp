@@ -11,7 +11,7 @@ const useAxiosAuth = () => {
         async (config) => {
             try {
                 const token = await AsyncStorage.getItem('token');
-                console.log('🔗 Full URL:', `${config.baseURL}${config.url}`);
+                // console.log('🔗 Full URL:', `${config.baseURL}${config.url}`);
 
                 if (token) {
                     config.headers.Authorization = `${token}`;

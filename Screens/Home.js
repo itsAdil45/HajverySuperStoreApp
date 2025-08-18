@@ -36,7 +36,7 @@ const Home = ({ navigation }) => {
     const { data: categoriesData, loading: categoriesLoading, error: categoriesError, refetch: refetchCategories } = useGet('/categories/all_main');
     const { data: dealsData, loading: dealsLoading, error: dealsError, refetch: refetchDeals } = useGet('/deals');
     const { data: saleProductsData, loading: saleProductsLoading, error: saleProductsError, refetch: refetchSaleProducts } = useGet('/products');
-    // const { data: homeConfigData, loading: homeConfigLoading, error: homeConfigError, refetch: refetchHomeConfig } = useGet('/admin/home-config'); // Admin endpoint for home page configuration
+    const { data: homeConfigData, loading: homeConfigLoading, error: homeConfigError, refetch: refetchHomeConfig } = useGet('/home-config/home-config'); // Admin endpoint for home page configuration
     const { put: updateFcmToken, loading: updateLoading, error: updateError } = usePut();
 
     const [categories, setCategories] = useState([]);
@@ -134,13 +134,12 @@ const Home = ({ navigation }) => {
         }
     }, [saleProductsData]);
 
-    // useEffect(() => {
-    //     if (homeConfigData && homeConfigData.categories) {
-    //         setHomeConfig(homeConfigData.categories);
-    //     }
-    // }, [homeConfigData]);
+    useEffect(() => {
+        if (homeConfigData) {
+            setHomeConfig(homeConfigData);
+        }
+    }, [homeConfigData]);
 
-    // Custom hooks for category-specific products
     const CategoryProductRow = ({ category, title, icon }) => {
         const { data: categoryProducts, loading: categoryLoading } = useGet(`/products?category=${category}`);
 
@@ -281,7 +280,6 @@ const Home = ({ navigation }) => {
         return { savings: formatPrice(savings), percentage };
     };
 
-    // Show full page skeleton while initial data is loading
     if (categoriesLoading || dealsLoading || saleProductsLoading) {
         return <HomePageSkeleton />;
     }
@@ -428,7 +426,6 @@ const Home = ({ navigation }) => {
             onScroll={scrollHandler}
             scrollEventThrottle={16}
         >
-            {/* Header - Show skeleton if user data is still loading */}
             {!user ? (
                 <HeaderSkeleton />
             ) : (
@@ -513,9 +510,9 @@ const Home = ({ navigation }) => {
                 <Animated.View style={[styles.shimmerOverlay, animatedShimmerStyle]} />
                 <View style={styles.bannerContent}>
                     <Text style={styles.bannerTitle}>
-                        🌍 World Food Festival{"\n"}Bring the world to your Kitchen!
+                        Daily Notification
                     </Text>
-                    <TouchableOpacity style={styles.shopNowBtn}>
+                    <TouchableOpacity style={styles.shopNowBtn} onPress={() => navigation.navigate('Notification')}>
                         <Text style={styles.shopNowText}>Explore Now</Text>
                         <MaterialIcons name="explore" size={16} color="#fff" />
                     </TouchableOpacity>

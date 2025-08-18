@@ -37,6 +37,7 @@ import EditProfileScreen from './Screens/EditProfileScreen';
 import MainCategoriesScreen from './Screens/MainCategoriesScreen';
 import SearchResultScreen from './Screens/SearchResultScreen';
 import DealDetails from './Screens/DealDetails';
+import Notification from './Screens/Notification';
 import appColors from './colors/appColors';
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -480,6 +481,14 @@ const MainStackNavigator = () => {
             <Stack.Screen
                 name="Product"
                 component={ProductScreen}
+                options={{
+                    headerShown: false,
+                    ...scaleTransition,
+                }}
+            />
+            <Stack.Screen
+                name="Notification"
+                component={Notification}
                 options={{
                     headerShown: false,
                     ...scaleTransition,
