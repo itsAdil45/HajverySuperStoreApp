@@ -32,11 +32,11 @@ export default function Notification() {
     const scrollY = useSharedValue(0);
     const [homeConfig, setHomeConfig] = useState(null);
 
-    const scrollHandler = useAnimatedScrollHandler({
-        onScroll: (event) => {
-            scrollY.value = event.contentOffset.y;
-        },
-    });
+    // const scrollHandler = useAnimatedScrollHandler({
+    //     onScroll: (event) => {
+    //         scrollY.value = event.contentOffset.y;
+    //     },
+    // });
     useEffect(() => {
         if (homeConfigData) {
             setHomeConfig(homeConfigData[0].message);
@@ -163,7 +163,7 @@ export default function Notification() {
             {/* Content */}
             <ScrollView
                 style={styles.scrollView}
-                onScroll={scrollHandler}
+                // onScroll={scrollHandler}
                 scrollEventThrottle={16}
                 refreshControl={
                     <RefreshControl

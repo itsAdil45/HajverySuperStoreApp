@@ -29,13 +29,11 @@ export default function CheckoutScreen() {
     const { patch, loading: patchLoading } = usePatch();
     const { deleteRequest, loading: deleteLoading } = useDelete();
 
-    // Local state for cart items to avoid full re-renders
     const [localCartItems, setLocalCartItems] = useState([]);
     const [localSummary, setLocalSummary] = useState(null);
     const [recommendations, setRecommendations] = useState([]);
     const [loadingRecommendations, setLoadingRecommendations] = useState(false);
 
-    // Initialize local state when cart data is loaded
     useEffect(() => {
         if (cartData?.cart) {
             setLocalCartItems(cartData.cart);
@@ -57,7 +55,6 @@ export default function CheckoutScreen() {
         return [...new Set(categories)];
     }, [localCartItems]);
 
-    // Optimistic update for quantity changes
     const updateLocalQuantity = (cartItemId, newQuantity) => {
         setLocalCartItems(prevItems => {
             const updatedItems = prevItems.map(item => {
@@ -67,7 +64,6 @@ export default function CheckoutScreen() {
                 return item;
             });
 
-            // Update summary as well
             const newTotalQuantity = updatedItems.reduce((sum, item) => sum + item.quantity, 0);
             const newTotal = updatedItems.reduce((sum, item) => {
                 if (item.itemType === 'deal') {
@@ -87,12 +83,10 @@ export default function CheckoutScreen() {
         });
     };
 
-    // Optimistic removal from cart
     const removeFromLocalCart = (cartItemId) => {
         setLocalCartItems(prevItems => {
             const filteredItems = prevItems.filter(item => item._id !== cartItemId);
 
-            // Update summary
             const newTotalQuantity = filteredItems.reduce((sum, item) => sum + item.quantity, 0);
             const newTotal = filteredItems.reduce((sum, item) => {
                 if (item.itemType === 'deal') {
@@ -112,10 +106,9 @@ export default function CheckoutScreen() {
         });
     };
 
-    // Add new item to local cart
     const addToLocalCart = (product, variantName = 'Default') => {
         const newItem = {
-            _id: `temp_${Date.now()}`, // Temporary ID
+            _id: `temp_${Date.now()}`,
             itemType: 'product',
             product: product,
             variant: product.variants.find(v => v.name === variantName) || product.variants[0],
@@ -125,7 +118,6 @@ export default function CheckoutScreen() {
         setLocalCartItems(prevItems => {
             const updatedItems = [...prevItems, newItem];
 
-            // Update summary
             const newTotalQuantity = updatedItems.reduce((sum, item) => sum + item.quantity, 0);
             const newTotal = updatedItems.reduce((sum, item) => {
                 if (item.itemType === 'deal') {
@@ -173,17 +165,14 @@ export default function CheckoutScreen() {
     }, [cartCategories]);
 
     const removeFromCart = async (cartItemId) => {
-        // Optimistically update UI first
         removeFromLocalCart(cartItemId);
 
         try {
             const result = await deleteRequest(`/api/cart/remove/${cartItemId}`, true);
             if (!result) {
-                // If API call fails, refetch to restore correct state
                 refetchCart();
             }
         } catch (error) {
-            // If error occurs, refetch to restore correct state
             refetchCart();
         }
     };
@@ -200,23 +189,19 @@ export default function CheckoutScreen() {
             return;
         }
 
-        // Optimistically update UI first
         updateLocalQuantity(cartItemId, newQuantity);
 
         try {
             const result = await patch(`/api/cart/update/${cartItemId}`, { quantity: newQuantity });
             if (!result) {
-                // If API call fails, refetch to restore correct state
                 refetchCart();
             }
         } catch (error) {
-            // If error occurs, refetch to restore correct state
             refetchCart();
         }
     };
 
     const addToCart = async (product, variantName = 'Default') => {
-        // Optimistically update UI first
         addToLocalCart(product, variantName);
 
         try {
@@ -234,14 +219,11 @@ export default function CheckoutScreen() {
                     text2: 'The item has been added to your cart.',
                     position: 'top',
                 });
-                // Refetch to get the correct item ID from server
                 refetchCart();
             } else {
-                // If API call fails, refetch to restore correct state
                 refetchCart();
             }
         } catch (error) {
-            // If error occurs, refetch to restore correct state
             refetchCart();
         }
     };
@@ -295,6 +277,23 @@ export default function CheckoutScreen() {
                                     Save Rs{item.deal.savings.toFixed(2)} ({item.deal.savingsPercentage}% off)
                                 </Text>
                             </View>
+
+                            {/* Quantity Controls for Deals */}
+                        </View>
+                        <View style={styles.qtyRow}>
+                            <TouchableOpacity
+                                onPress={() => updateQuantity(item._id, item.quantity - 1)}
+                                disabled={patchLoading || deleteLoading}
+                            >
+                                <Text style={styles.qtyBtn}>-</Text>
+                            </TouchableOpacity>
+                            <Text style={styles.qtyText}>{item.quantity}</Text>
+                            <TouchableOpacity
+                                onPress={() => updateQuantity(item._id, item.quantity + 1)}
+                                disabled={patchLoading || deleteLoading}
+                            >
+                                <Text style={styles.qtyBtn}>+</Text>
+                            </TouchableOpacity>
                         </View>
                     </View>
                 </View>
@@ -467,7 +466,7 @@ export default function CheckoutScreen() {
                     </View>
 
                     <Text style={styles.summaryTotal}>
-                        Grand Total: Rs{localSummary.total.toFixed(2)}
+                        Grand Total: Rs{(localSummary.total + 50).toFixed(2)}
                     </Text>
                 </View>
             )}
@@ -476,10 +475,10 @@ export default function CheckoutScreen() {
             <TouchableOpacity
                 style={[styles.checkoutBtn, (patchLoading || postLoading || deleteLoading) && { opacity: 0.7 }]}
                 disabled={patchLoading || postLoading || deleteLoading}
-                onPress={() => navigation.navigate("Payment", { total: localSummary?.total.toFixed(2) })}
+                onPress={() => navigation.navigate("Payment", { total: (localSummary?.total + 50).toFixed(2) })}
             >
                 <Text style={styles.checkoutText}>
-                    Rs{localSummary?.total.toFixed(2)}   |   Place Order
+                    Rs{(localSummary?.total + 50).toFixed(2)}   |   Place Order
                 </Text>
             </TouchableOpacity>
         </ScrollView>
