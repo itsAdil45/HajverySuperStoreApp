@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Image, StyleSheet, Dimensions } from 'react-native';
+import { View, Image, StyleSheet, Dimensions, StatusBar } from 'react-native';
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
@@ -104,6 +104,8 @@ const SplashScreen = () => {
 
     return (
         <View style={styles.container}>
+            <StatusBar barStyle="dark-content" backgroundColor="#0e5aa6" />
+
             <Animated.View style={[styles.background, backgroundAnimatedStyle]}>
                 {/* <LinearGradient
                     colors={['#E8F5E8', '#F0FFF0', '#FFFFFF']}
@@ -125,7 +127,7 @@ const SplashScreen = () => {
                 {/* Main logo */}
                 <Animated.View style={logoAnimatedStyle}>
                     <Image
-                        source={require('../assets/Logo.png')}
+                        source={require('../assets/transparentlogo.png')}
                         style={styles.logo}
                         resizeMode="contain"
                     />

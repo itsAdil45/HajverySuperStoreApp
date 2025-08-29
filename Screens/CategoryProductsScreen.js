@@ -25,7 +25,8 @@ const CategoryProductsScreen = ({ navigation, route }) => {
         selectedSubcat ? `/products?category=${encodeURIComponent(selectedSubcat)}` : null,
         false // Don't run on mount
     );
-    const isLoading = loading || (selectedSubcat && productsLoading);
+    const isLoading = loading;
+    //|| (selectedSubcat && productsLoading);
 
     useEffect(() => {
         if (data && data.subCategories) {

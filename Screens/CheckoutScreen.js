@@ -24,6 +24,8 @@ const baseUrl = 'https://hajverystorebackend.onrender.com/api';
 
 export default function CheckoutScreen() {
     const navigation = useNavigation();
+
+    // All hooks must be called at the top level
     const { data: cartData, loading: cartLoading, error: cartError, refetch: refetchCart } = useGet('/cart');
     const { post, loading: postLoading } = usePost();
     const { patch, loading: patchLoading } = usePatch();
@@ -33,6 +35,45 @@ export default function CheckoutScreen() {
     const [localSummary, setLocalSummary] = useState(null);
     const [recommendations, setRecommendations] = useState([]);
     const [loadingRecommendations, setLoadingRecommendations] = useState(false);
+
+    // Helper function to check if error is network-related
+    const isNetworkError = useCallback((error) => {
+        if (!error) return false;
+
+        // Handle different error formats
+        let errorMessage = '';
+        if (typeof error === 'string') {
+            errorMessage = error.toLowerCase();
+        } else if (error.message) {
+            errorMessage = error.message.toLowerCase();
+        } else if (error.toString) {
+            errorMessage = error.toString().toLowerCase();
+        }
+
+        return errorMessage.includes('network') ||
+            errorMessage.includes('connection') ||
+            errorMessage.includes('offline') ||
+            errorMessage.includes('fetch');
+    }, []);
+
+    // Helper function to get error message safely
+    const getErrorMessage = useCallback((error) => {
+        if (!error) return 'An unknown error occurred';
+
+        if (typeof error === 'string') {
+            return error;
+        }
+
+        if (error.message) {
+            return error.message;
+        }
+
+        if (error.toString && typeof error.toString === 'function') {
+            return error.toString();
+        }
+
+        return 'An error occurred';
+    }, []);
 
     useEffect(() => {
         if (cartData?.cart) {
@@ -55,7 +96,7 @@ export default function CheckoutScreen() {
         return [...new Set(categories)];
     }, [localCartItems]);
 
-    const updateLocalQuantity = (cartItemId, newQuantity) => {
+    const updateLocalQuantity = useCallback((cartItemId, newQuantity) => {
         setLocalCartItems(prevItems => {
             const updatedItems = prevItems.map(item => {
                 if (item._id === cartItemId) {
@@ -81,9 +122,9 @@ export default function CheckoutScreen() {
 
             return updatedItems;
         });
-    };
+    }, []);
 
-    const removeFromLocalCart = (cartItemId) => {
+    const removeFromLocalCart = useCallback((cartItemId) => {
         setLocalCartItems(prevItems => {
             const filteredItems = prevItems.filter(item => item._id !== cartItemId);
 
@@ -104,9 +145,9 @@ export default function CheckoutScreen() {
 
             return filteredItems;
         });
-    };
+    }, []);
 
-    const addToLocalCart = (product, variantName = 'Default') => {
+    const addToLocalCart = useCallback((product, variantName = 'Default') => {
         const newItem = {
             _id: `temp_${Date.now()}`,
             itemType: 'product',
@@ -135,12 +176,12 @@ export default function CheckoutScreen() {
 
             return updatedItems;
         });
-    };
+    }, []);
 
     useFocusEffect(
         useCallback(() => {
             refetchCart();
-        }, []),
+        }, [refetchCart]),
     );
 
     useEffect(() => {
@@ -164,7 +205,7 @@ export default function CheckoutScreen() {
         fetchRecommendations();
     }, [cartCategories]);
 
-    const removeFromCart = async (cartItemId) => {
+    const removeFromCart = useCallback(async (cartItemId) => {
         removeFromLocalCart(cartItemId);
 
         try {
@@ -173,11 +214,22 @@ export default function CheckoutScreen() {
                 refetchCart();
             }
         } catch (error) {
+            console.error('Error removing from cart:', error);
             refetchCart();
-        }
-    };
 
-    const updateQuantity = async (cartItemId, newQuantity) => {
+            // Show error toast for network issues
+            if (isNetworkError(error)) {
+                Toast.show({
+                    type: 'error',
+                    text1: 'Connection Error',
+                    text2: 'Please check your internet connection',
+                    position: 'top',
+                });
+            }
+        }
+    }, [removeFromLocalCart, deleteRequest, refetchCart, isNetworkError]);
+
+    const updateQuantity = useCallback(async (cartItemId, newQuantity) => {
         if (newQuantity <= 0) {
             Toast.show({
                 type: 'info',
@@ -197,11 +249,22 @@ export default function CheckoutScreen() {
                 refetchCart();
             }
         } catch (error) {
+            console.error('Error updating quantity:', error);
             refetchCart();
-        }
-    };
 
-    const addToCart = async (product, variantName = 'Default') => {
+            // Show error toast for network issues
+            if (isNetworkError(error)) {
+                Toast.show({
+                    type: 'error',
+                    text1: 'Connection Error',
+                    text2: 'Please check your internet connection',
+                    position: 'top',
+                });
+            }
+        }
+    }, [updateLocalQuantity, patch, refetchCart, isNetworkError, removeFromCart]);
+
+    const addToCart = useCallback(async (product, variantName = 'Default') => {
         addToLocalCart(product, variantName);
 
         try {
@@ -224,11 +287,22 @@ export default function CheckoutScreen() {
                 refetchCart();
             }
         } catch (error) {
+            console.error('Error adding to cart:', error);
             refetchCart();
-        }
-    };
 
-    const renderDealProducts = (products) => {
+            // Show error toast for network issues
+            if (isNetworkError(error)) {
+                Toast.show({
+                    type: 'error',
+                    text1: 'Connection Error',
+                    text2: 'Please check your internet connection',
+                    position: 'top',
+                });
+            }
+        }
+    }, [addToLocalCart, post, refetchCart, isNetworkError]);
+
+    const renderDealProducts = useCallback((products) => {
         return products.map((product, index) => (
             <View key={`${product._id}-${index}`} style={styles.dealProduct}>
                 <Image
@@ -242,9 +316,9 @@ export default function CheckoutScreen() {
                 </View>
             </View>
         ));
-    };
+    }, []);
 
-    const renderCartItem = (item) => {
+    const renderCartItem = useCallback((item) => {
         if (item.itemType === 'deal') {
             return (
                 <View style={styles.cartItem} key={item._id}>
@@ -261,7 +335,6 @@ export default function CheckoutScreen() {
                             {item.deal.description}
                         </Text>
 
-                        {/* Deal Products */}
                         <View style={styles.dealProductsContainer}>
                             <Text style={styles.dealProductsLabel}>Includes:</Text>
                             {renderDealProducts(item.deal.products)}
@@ -277,8 +350,6 @@ export default function CheckoutScreen() {
                                     Save Rs{item.deal.savings.toFixed(2)} ({item.deal.savingsPercentage}% off)
                                 </Text>
                             </View>
-
-                            {/* Quantity Controls for Deals */}
                         </View>
                         <View style={styles.qtyRow}>
                             <TouchableOpacity
@@ -300,7 +371,6 @@ export default function CheckoutScreen() {
             );
         }
 
-        // Regular product item
         return (
             <View style={styles.cartItem} key={item._id}>
                 <Image
@@ -343,9 +413,9 @@ export default function CheckoutScreen() {
                 </View>
             </View>
         );
-    };
+    }, [updateQuantity, patchLoading, deleteLoading, renderDealProducts]);
 
-    const renderRecommendationItem = ({ item }) => (
+    const renderRecommendationItem = useCallback(({ item }) => (
         <TouchableOpacity style={styles.recommendCard} onPress={() => navigation.navigate("Product", { productId: item._id })}>
             <Image
                 source={{ uri: item.images[0] }}
@@ -363,7 +433,7 @@ export default function CheckoutScreen() {
                     </Text>
                 )}
             </View>
-            <TouchableOpacity
+            {/* <TouchableOpacity
                 style={styles.addBtn}
                 onPress={() => addToCart(item)}
                 disabled={postLoading}
@@ -371,36 +441,62 @@ export default function CheckoutScreen() {
                 <Text style={styles.addBtnText}>
                     {postLoading ? 'Adding...' : 'Add'}
                 </Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
         </TouchableOpacity>
-    );
+    ), [navigation, addToCart, postLoading]);
 
+    // Conditional rendering based on states
     if (cartLoading && localCartItems.length === 0) {
-        return (
-            <CartPageSkeleton itemCount={3} />
-        );
+        return <CartPageSkeleton itemCount={3} />;
     }
 
     if (cartError) {
+        const errorMessage = getErrorMessage(cartError);
+        const isNetworkIssue = isNetworkError(cartError);
+
         return (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-                <Text style={{ color: 'red', textAlign: 'center', marginBottom: 20 }}>
-                    Error loading cart: {cartError}
-                </Text>
-                <TouchableOpacity
-                    style={styles.addBtn}
-                    onPress={refetchCart}
-                >
-                    <Text style={styles.addBtnText}>Retry</Text>
-                </TouchableOpacity>
+            <View style={styles.errorContainer}>
+                <View style={styles.errorContent}>
+                    {isNetworkIssue ? (
+                        <>
+                            <Text style={styles.errorIcon}>📶</Text>
+                            <Text style={styles.errorTitle}>Connection Problem</Text>
+                            <Text style={styles.errorMessage}>
+                                Please check your internet connection and try again.
+                            </Text>
+                        </>
+                    ) : (
+                        <>
+                            <Text style={styles.errorIcon}>⚠️</Text>
+                            <Text style={styles.errorTitle}>Something went wrong</Text>
+                            <Text style={styles.errorMessage}>
+                                {errorMessage}
+                            </Text>
+                        </>
+                    )}
+
+                    <TouchableOpacity
+                        style={styles.retryButton}
+                        onPress={refetchCart}
+                    >
+                        <Text style={styles.retryButtonText}>Try Again</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={styles.goBackButton}
+                        onPress={() => navigation.navigate('CategoryTab')}
+                    >
+                        <Text style={styles.goBackButtonText}>Go to Categories</Text>
+                    </TouchableOpacity>
+                </View>
             </View>
         );
     }
 
     if (!localCartItems || localCartItems.length === 0) {
         return (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                <Text style={{ fontSize: 18, color: '#777' }}>Your cart is empty</Text>
+            <View style={styles.emptyCartContainer}>
+                <Text style={styles.emptyCartText}>Your cart is empty</Text>
                 <TouchableOpacity
                     style={styles.addBtn}
                     onPress={() => navigation.navigate('CategoryTab')}
@@ -413,10 +509,8 @@ export default function CheckoutScreen() {
 
     return (
         <ScrollView style={styles.container}>
-            {/* Cart Items */}
             {localCartItems.map(renderCartItem)}
 
-            {/* Recommendation Section */}
             <Text style={styles.subheading}>Before you Checkout</Text>
             {loadingRecommendations ? (
                 <ActivityIndicator size="small" color={appColors.darkerBg} style={{ margin: 20 }} />
@@ -430,13 +524,11 @@ export default function CheckoutScreen() {
                 />
             )}
 
-            {/* Coupon Section */}
             <TouchableOpacity style={styles.couponRow}>
                 <Text>🧾  APPLY COUPON</Text>
                 <Text>{'>'}</Text>
             </TouchableOpacity>
 
-            {/* Summary Section */}
             {localSummary && (
                 <View style={styles.summary}>
                     <View style={styles.summaryRow}>
@@ -471,7 +563,6 @@ export default function CheckoutScreen() {
                 </View>
             )}
 
-            {/* Place Order Button */}
             <TouchableOpacity
                 style={[styles.checkoutBtn, (patchLoading || postLoading || deleteLoading) && { opacity: 0.7 }]}
                 disabled={patchLoading || postLoading || deleteLoading}
@@ -491,6 +582,74 @@ const styles = {
         backgroundColor: '#fff',
         padding: 20,
     },
+    // Error handling styles
+    errorContainer: {
+        flex: 1,
+        backgroundColor: '#fff',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+    },
+    errorContent: {
+        alignItems: 'center',
+        maxWidth: 300,
+    },
+    errorIcon: {
+        fontSize: 48,
+        marginBottom: 16,
+    },
+    errorTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: '#333',
+        marginBottom: 12,
+        textAlign: 'center',
+    },
+    errorMessage: {
+        fontSize: 16,
+        color: '#666',
+        textAlign: 'center',
+        marginBottom: 24,
+        lineHeight: 22,
+    },
+    retryButton: {
+        backgroundColor: appColors.Primary_Button,
+        paddingVertical: 12,
+        paddingHorizontal: 32,
+        borderRadius: 8,
+        marginBottom: 12,
+    },
+    retryButtonText: {
+        color: 'white',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    goBackButton: {
+        backgroundColor: 'transparent',
+        paddingVertical: 12,
+        paddingHorizontal: 32,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: appColors.Primary_Button,
+    },
+    goBackButtonText: {
+        color: appColors.Primary_Button,
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    // Empty cart styles
+    emptyCartContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+    },
+    emptyCartText: {
+        fontSize: 18,
+        color: '#777',
+        marginBottom: 20,
+    },
+    // Existing styles
     cartItem: {
         flexDirection: 'row',
         backgroundColor: '#f8f8f8',
@@ -537,7 +696,6 @@ const styles = {
         fontSize: 16,
         paddingHorizontal: 15,
     },
-    // Deal-specific styles
     dealHeader: {
         marginBottom: 5,
     },
@@ -607,7 +765,6 @@ const styles = {
         fontWeight: '600',
         marginTop: 2,
     },
-    // Recommendation styles
     subheading: {
         fontSize: 18,
         fontWeight: 'bold',

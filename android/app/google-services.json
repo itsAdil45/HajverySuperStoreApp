@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "25182947888",
+    "project_id": "hajverysuperstore-402b9",
+    "storage_bucket": "hajverysuperstore-402b9.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:25182947888:android:714714c0fffec455d77bf5",
+        "android_client_info": {
+          "package_name": "com.hajverysuperstore.com"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB-b0H8WzQbv463b7KcpPJAkq3U75rGAh0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

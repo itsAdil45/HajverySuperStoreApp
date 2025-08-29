@@ -18,6 +18,7 @@ import OtpModal from '../Modals/OtpModal';
 import ConfirmationModal from '../Modals/ConfirmationModal';
 import usePost from '../hooks/usePost';
 import appColors from '../colors/appColors';
+import Toast from 'react-native-toast-message';
 
 Notifications.setNotificationHandler({
     handleNotification: async () => ({
@@ -48,59 +49,6 @@ const SignupScreen = ({ navigation, route }) => {
     const notificationListener = useRef();
     const responseListener = useRef();
 
-    // Register for push notifications
-    // const registerForPushNotificationsAsync = async () => {
-    //     if (!Device.isDevice) {
-    //         Alert.alert('Must use physical device');
-    //         return;
-    //     }
-    //     const { status: existingStatus } = await Notifications.getPermissionsAsync();
-    //     let finalStatus = existingStatus;
-    //     if (existingStatus !== 'granted') {
-    //         const { status } = await Notifications.requestPermissionsAsync();
-    //         finalStatus = status;
-    //     }
-    //     if (finalStatus !== 'granted') {
-    //         Alert.alert('Notification permissions not granted');
-    //         return;
-    //     }
-    //     try {
-    //         const tokenData = await Notifications.getDevicePushTokenAsync();
-    //         return tokenData.data;
-    //     } catch (err) {
-    //         Alert.alert('Error fetching FCM token', err.message);
-    //     }
-    // };
-
-    // useEffect(() => {
-    //     registerForPushNotificationsAsync().then((token) => {
-    //         if (token) {
-    //             setFcmToken(token);
-    //         }
-    //     });
-
-    //     notificationListener.current =
-    //         Notifications.addNotificationReceivedListener((notification) => {
-    //             Alert.alert('🔔 Notification', notification.request.content.body);
-    //         });
-
-    //     responseListener.current =
-    //         Notifications.addNotificationResponseReceivedListener((response) => {
-    //             console.log('User tapped notification:', response);
-    //         });
-
-    //     return () => {
-    //         // Updated cleanup using subscription.remove()
-    //         if (notificationListener.current) {
-    //             notificationListener.current.remove();
-    //         }
-    //         if (responseListener.current) {
-    //             responseListener.current.remove();
-    //         }
-    //     };
-    // }, []);
-
-    // Handle address from LocationPickerScreen
     useEffect(() => {
         const { selectedAddress, formData } = route.params || {};
 
@@ -128,14 +76,14 @@ const SignupScreen = ({ navigation, route }) => {
     const handleRegister = async () => {
         // Validate all fields
         if (!name || !email || !phone || !password || !address) {
-            Alert.alert('Error', 'Please fill in all required fields.');
+            Toast.show({
+                type: 'error',
+                text1: 'Required fields',
+                text2: 'Please fill in all required fields.',
+                position: 'top',
+            });
             return;
         }
-
-        // if (!fcmToken) {
-        //     Alert.alert('Error', 'FCM token not available. Please try again.');
-        //     return;
-        // }
 
         const userData = {
             name,
@@ -152,7 +100,12 @@ const SignupScreen = ({ navigation, route }) => {
         if (result) {
             setShowOtpModal(true);
         } else {
-            Alert.alert('Registration Error', error || 'Failed to register. Please try again.');
+            Toast.show({
+                type: 'error',
+                text1: 'Registration Error',
+                text2: 'Failed to register. Please try again',
+                position: 'top',
+            });
         }
     };
 
@@ -301,16 +254,24 @@ const SignupScreen = ({ navigation, route }) => {
                             email,
                             otp: otpCode
                         });
-                        console.log(verifyRes);
                         if (verifyRes?.status === 'success') {
                             setShowOtpModal(false);
                             setShowConfirmationModal(true);
                         } else {
-                            Alert.alert('Verification Failed', verifyRes?.message || 'Invalid OTP');
+                            Toast.show({
+                                type: 'error',
+                                text1: 'Verification Failed',
+                                text2: 'OTP Verification Error',
+                                position: 'top',
+                            });
                         }
                     } catch (err) {
-                        console.error('OTP Verification Error:', err);
-                        Alert.alert('Error', 'Something went wrong verifying OTP');
+                        Toast.show({
+                            type: 'error',
+                            text1: 'Verification Failed',
+                            text2: 'OTP Verification Error',
+                            position: 'top',
+                        });
                     }
                 }}
                 onResend={() => {

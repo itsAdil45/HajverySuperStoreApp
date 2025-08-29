@@ -14,6 +14,7 @@ import { Feather } from '@expo/vector-icons';
 
 import { useAuth } from '../contexts/AuthContext';
 import appColors from '../colors/appColors';
+import Toast from 'react-native-toast-message';
 
 const LoginScreen = ({ navigation }) => {
     const [email, setEmail] = useState('');
@@ -30,8 +31,12 @@ const LoginScreen = ({ navigation }) => {
                     type: "email"
                 })
             }
-            console.log(errorCode);
-            Alert.alert('Login Failed', error || 'Invalid email or password');
+            Toast.show({
+                type: 'error',
+                text1: 'Login Failed',
+                text2: 'Invalid email or password',
+                position: 'top',
+            });
         }
     };
 

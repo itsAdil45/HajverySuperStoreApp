@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     View,
     Text,
@@ -23,12 +23,47 @@ export default function OrderScreen({ navigation }) {
     const handleBack = () => {
         navigation?.goBack();
     };
+    const isNetworkError = useCallback((error) => {
+        if (!error) return false;
+
+        // Handle different error formats
+        let errorMessage = '';
+        if (typeof error === 'string') {
+            errorMessage = error.toLowerCase();
+        } else if (error.message) {
+            errorMessage = error.message.toLowerCase();
+        } else if (error.toString) {
+            errorMessage = error.toString().toLowerCase();
+        }
+
+        return errorMessage.includes('network') ||
+            errorMessage.includes('connection') ||
+            errorMessage.includes('offline') ||
+            errorMessage.includes('fetch');
+    }, []);
 
     const handleOrderPress = (orderId) => {
         // Navigate to order details screen
         console.log("Navigating to OrderDetail with ID:", orderId);
         navigation.navigate('OrderDetail', { orderId });
     };
+    const getErrorMessage = useCallback((error) => {
+        if (!error) return 'An unknown error occurred';
+
+        if (typeof error === 'string') {
+            return error;
+        }
+
+        if (error.message) {
+            return error.message;
+        }
+
+        if (error.toString && typeof error.toString === 'function') {
+            return error.toString();
+        }
+
+        return 'An error occurred';
+    }, []);
 
     // Filter orders based on selected tab and status
     const filteredOrders = orders ? orders.filter(order => {
@@ -165,20 +200,37 @@ export default function OrderScreen({ navigation }) {
     }
 
     if (error) {
+        const errorMessage = getErrorMessage(error);
+        const isNetworkIssue = isNetworkError(error);
+
         return (
-            <View style={styles.container}>
-                <View style={styles.header}>
-                    <TouchableOpacity style={styles.backBtn} onPress={handleBack} activeOpacity={0.7}>
-                        <Feather name='arrow-left' size={20} color="#1f2937" />
+            <View style={styles.errorContainer}>
+                <View style={styles.errorContent}>
+                    {isNetworkIssue ? (
+                        <>
+                            <Text style={styles.errorIcon}>📶</Text>
+                            <Text style={styles.errorTitle}>Connection Problem</Text>
+                            <Text style={styles.errorMessage}>
+                                Please check your internet connection and try again.
+                            </Text>
+                        </>
+                    ) : (
+                        <>
+                            <Text style={styles.errorIcon}>⚠️</Text>
+                            <Text style={styles.errorTitle}>Something went wrong</Text>
+                            <Text style={styles.errorMessage}>
+                                {errorMessage}
+                            </Text>
+                        </>
+                    )}
+
+                    <TouchableOpacity
+                        style={styles.retryButton}
+                        onPress={refetch}
+                    >
+                        <Text style={styles.retryButtonText}>Try Again</Text>
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>My Orders</Text>
-                    <View style={styles.headerSpacer} />
-                </View>
-                <View style={styles.errorContainer}>
-                    <Text style={styles.errorText}>{error}</Text>
-                    <TouchableOpacity style={styles.retryBtn} onPress={refetch} activeOpacity={0.7}>
-                        <Text style={styles.retryText}>Retry</Text>
-                    </TouchableOpacity>
+
                 </View>
             </View>
         );
@@ -465,5 +517,71 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#6b7280',
         textAlign: 'center',
+    },
+    errorContainer: {
+        flex: 1,
+        backgroundColor: '#fff',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+    },
+    errorContent: {
+        alignItems: 'center',
+        maxWidth: 300,
+    },
+    errorIcon: {
+        fontSize: 48,
+        marginBottom: 16,
+    },
+    errorTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: '#333',
+        marginBottom: 12,
+        textAlign: 'center',
+    },
+    errorMessage: {
+        fontSize: 16,
+        color: '#666',
+        textAlign: 'center',
+        marginBottom: 24,
+        lineHeight: 22,
+    },
+    retryButton: {
+        backgroundColor: appColors.Primary_Button,
+        paddingVertical: 12,
+        paddingHorizontal: 32,
+        borderRadius: 8,
+        marginBottom: 12,
+    },
+    retryButtonText: {
+        color: 'white',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    goBackButton: {
+        backgroundColor: 'transparent',
+        paddingVertical: 12,
+        paddingHorizontal: 32,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: appColors.Primary_Button,
+    },
+    goBackButtonText: {
+        color: appColors.Primary_Button,
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    // Empty cart styles
+    emptyCartContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+    },
+    emptyCartText: {
+        fontSize: 18,
+        color: '#777',
+        marginBottom: 20,
     },
 });
