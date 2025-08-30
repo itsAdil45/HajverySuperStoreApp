@@ -144,7 +144,7 @@ const DealDetails = ({ navigation, route }) => {
                 <View style={styles.productContent}>
                     <View style={styles.productHeader}>
                         <Text style={styles.productBrand}>{product.brand}</Text>
-                        <TouchableOpacity
+                        {/* <TouchableOpacity
                             style={styles.quickAddBtn}
                             onPress={(e) => {
                                 e.stopPropagation();
@@ -157,7 +157,7 @@ const DealDetails = ({ navigation, route }) => {
                                 size={16}
                                 color={product.stock > 0 ? themeColors.primaryBlue : "#ccc"}
                             />
-                        </TouchableOpacity>
+                        </TouchableOpacity> */}
                     </View>
 
                     <Text style={styles.productName} numberOfLines={2}>{product.name}</Text>
@@ -226,9 +226,9 @@ const DealDetails = ({ navigation, route }) => {
             </TouchableOpacity>
 
             {/* Floating Share Button */}
-            <TouchableOpacity style={styles.floatingShareBtn}>
+            {/* <TouchableOpacity style={styles.floatingShareBtn}>
                 <Ionicons name="share-outline" size={20} color="#fff" />
-            </TouchableOpacity>
+            </TouchableOpacity> */}
 
             <ScrollView
                 style={styles.scrollView}

@@ -147,6 +147,7 @@ const SearchResultScreen = ({ route, navigation }) => {
                         value={searchText}
                         onChangeText={setSearchText}
                         onSubmitEditing={handleSearch}
+                        placeholderTextColor="#777"
                     />
                     {searchText ? (
                         <TouchableOpacity onPress={() => setSearchText('')}>
@@ -267,8 +268,8 @@ const SearchResultScreen = ({ route, navigation }) => {
                         <View style={styles.filterSection}>
                             <Text style={styles.filterTitle}>Price Range</Text>
                             <View style={styles.priceRangeValues}>
-                                <Text>Rs {priceRange[0].toFixed(2)}</Text>
-                                <Text>Rs {priceRange[1].toFixed(2)}</Text>
+                                <Text style={{ color: "#777" }}>Rs {priceRange[0].toFixed(2)}</Text>
+                                <Text style={{ color: "#777" }}>Rs {priceRange[1].toFixed(2)}</Text>
                             </View>
                             <Slider
                                 style={styles.slider}
@@ -422,6 +423,7 @@ const styles = StyleSheet.create({
         flex: 1,
         fontSize: 16,
         padding: 0,
+        color: "#777"
     },
 
     // Results Info
@@ -495,6 +497,7 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: '600',
         marginBottom: 4,
+        color: '#333',
     },
     qty: {
         fontSize: 12,
@@ -581,6 +584,7 @@ const styles = StyleSheet.create({
     modalTitle: {
         fontSize: 20,
         fontWeight: 'bold',
+        color: "#777"
     },
     modalContent: {
         flex: 1,
@@ -625,11 +629,13 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '600',
         marginBottom: 15,
+        color: '#333',
     },
     priceRangeValues: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         marginBottom: 10,
+        color: '#777',
     },
     slider: {
         width: '100%',
@@ -663,6 +669,7 @@ const styles = StyleSheet.create({
     // Radio Buttons (for sort options)
     radioGroup: {
         marginTop: 5,
+        color: "#777"
     },
     radioOption: {
         flexDirection: 'row',
@@ -690,6 +697,7 @@ const styles = StyleSheet.create({
     },
     radioLabel: {
         fontSize: 16,
+        color: '#333',
     },
 
     // Center Loading/Error

@@ -44,10 +44,14 @@ const SkeletonBox = React.memo(({
     style = {},
     disableShimmer = false
 }) => {
-    const shimmerAnimation = disableShimmer ? null : getSharedShimmerValue();
+    const isNumericWidth = typeof boxWidth === "number";
+
+    const shimmerAnimation = disableShimmer || !isNumericWidth
+        ? null
+        : getSharedShimmerValue();
 
     const animatedShimmerStyle = useAnimatedStyle(() => {
-        if (!shimmerAnimation) return {};
+        if (!shimmerAnimation || !isNumericWidth) return {};
 
         const translateX = interpolate(
             shimmerAnimation.value,
@@ -73,15 +77,15 @@ const SkeletonBox = React.memo(({
     const shimmerStyle = useMemo(() => [
         styles.shimmerOverlay,
         {
-            width: boxWidth * 0.8,
+            width: isNumericWidth ? boxWidth * 0.8 : "80%",
             height,
             borderRadius
         }
-    ], [boxWidth, height, borderRadius]);
+    ], [boxWidth, height, borderRadius, isNumericWidth]);
 
     return (
         <View style={boxStyle}>
-            {!disableShimmer && (
+            {!disableShimmer && isNumericWidth && (
                 <Animated.View
                     style={[shimmerStyle, animatedShimmerStyle]}
                 />
@@ -89,6 +93,7 @@ const SkeletonBox = React.memo(({
         </View>
     );
 });
+
 
 // All Deals Page Header Skeleton
 const AllDealsHeaderSkeleton = React.memo(() => (

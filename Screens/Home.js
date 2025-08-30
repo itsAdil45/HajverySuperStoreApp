@@ -360,10 +360,10 @@ const Home = ({ navigation }) => {
                         </View>
 
                         {/* Action Button */}
-                        <TouchableOpacity style={styles.dealActionBtn}>
+                        <View style={styles.dealActionBtn}>
                             <Text style={styles.dealActionText}>Grab Deal</Text>
                             <MaterialIcons name="arrow-forward" size={14} color="#fff" />
-                        </TouchableOpacity>
+                        </View>
                     </View>
                 </TouchableOpacity>
             </View>
@@ -430,7 +430,7 @@ const Home = ({ navigation }) => {
                 <HeaderSkeleton />
             ) : (
                 <Animated.View style={[styles.header, animatedHeaderStyle]}>
-                    <View>
+                    <View style={{ width: '75%' }}>
                         <Text style={styles.locationTitle}>Hello! 👋</Text>
                         <Text style={styles.locationText}>
                             {user?.address?.split("/")[0]?.trim() || 'Select Location'}
@@ -471,7 +471,7 @@ const Home = ({ navigation }) => {
                         }
                     }}
                 >
-                    <Ionicons name="options-outline" size={18} color="#fff" />
+                    <Ionicons name="search" size={18} color="#fff" />
                 </TouchableOpacity>
             </View>
 

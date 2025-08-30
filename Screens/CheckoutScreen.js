@@ -525,7 +525,7 @@ export default function CheckoutScreen() {
             )}
 
             <TouchableOpacity style={styles.couponRow}>
-                <Text>🧾  APPLY COUPON</Text>
+                <Text style={{ color: "#777" }}>🧾  APPLY COUPON</Text>
                 <Text>{'>'}</Text>
             </TouchableOpacity>
 
@@ -667,6 +667,7 @@ const styles = {
         fontSize: 16,
         fontWeight: 'bold',
         marginBottom: 5,
+        color: appColors.Primary_Button
     },
     cartPrice: {
         fontSize: 16,
@@ -690,11 +691,13 @@ const styles = {
         paddingVertical: 5,
         backgroundColor: '#e0e0e0',
         textAlign: 'center',
+        color: appColors.Primary_Button,
         minWidth: 35,
     },
     qtyText: {
         fontSize: 16,
         paddingHorizontal: 15,
+        color: appColors.Primary_Button,
     },
     dealHeader: {
         marginBottom: 5,
@@ -769,6 +772,7 @@ const styles = {
         fontSize: 18,
         fontWeight: 'bold',
         marginVertical: 20,
+        color: "#777"
     },
     recommendCard: {
         width: 150,
@@ -787,6 +791,7 @@ const styles = {
         fontSize: 14,
         fontWeight: 'bold',
         marginBottom: 5,
+        color: appColors.Primary_Button
     },
     recommendPrice: {
         fontSize: 14,
@@ -834,6 +839,7 @@ const styles = {
     },
     summaryText: {
         fontSize: 16,
+        color: "#777"
     },
     breakdownContainer: {
         paddingLeft: 10,
@@ -851,6 +857,7 @@ const styles = {
         paddingTop: 10,
         borderTopWidth: 1,
         borderTopColor: '#ddd',
+        color: appColors.darkerBg
     },
     checkoutBtn: {
         backgroundColor: appColors.Primary_Button,
