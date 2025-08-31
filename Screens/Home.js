@@ -129,7 +129,7 @@ const Home = ({ navigation }) => {
     useEffect(() => {
         if (saleProductsData) {
             // Filter products that have active sale
-            const productsOnSale = saleProductsData.filter(product => product.hasActiveSale === true);
+            const productsOnSale = saleProductsData?.products.filter(product => product.hasActiveSale === true);
             setSaleProducts(productsOnSale);
         }
     }, [saleProductsData]);
@@ -184,7 +184,7 @@ const Home = ({ navigation }) => {
             return <ProductsSkeleton title={title} />;
         }
 
-        if (!categoryProducts || categoryProducts.length === 0) {
+        if (!categoryProducts || categoryProducts?.products.length === 0) {
             return null;
         }
 
@@ -201,7 +201,7 @@ const Home = ({ navigation }) => {
                 </View>
 
                 <FlatList
-                    data={categoryProducts.slice(0, 10)} // Limit to 10 items for performance
+                    data={categoryProducts?.products.slice(0, 10)} // Limit to 10 items for performance
                     keyExtractor={(item) => item.id}
                     horizontal
                     showsHorizontalScrollIndicator={false}

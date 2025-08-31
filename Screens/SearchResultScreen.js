@@ -15,39 +15,102 @@ import { Feather, MaterialIcons, AntDesign } from '@expo/vector-icons';
 import useGet from '../hooks/useGet';
 import Slider from '@react-native-community/slider';
 import appColors from '../colors/appColors';
-
+import useAxiosAuth from '../hooks/useAxiosAuth';
 const SearchResultScreen = ({ route, navigation }) => {
     // Extract search parameter first
     const { search, hasActiveSale } = route.params || {};
 
+    // Get axios instance at component level
+    const axiosAuth = useAxiosAuth();
+
     // Initialize searchParams with the route parameter to prevent double API call
     const [searchParams, setSearchParams] = useState(search || '');
     const [showFilters, setShowFilters] = useState(false);
-    const [priceRange, setPriceRange] = useState([0, 100]);
+    const [priceRange, setPriceRange] = useState([0, 1000]);
     const [selectedCategories, setSelectedCategories] = useState([]);
     const [selectedBrands, setSelectedBrands] = useState([]);
     const [sortOption, setSortOption] = useState('relevance');
     const [searchText, setSearchText] = useState(search || '');
 
-    // Remove the useEffect that was causing the double call
-    // useEffect(() => {
-    //     setSearchParams(search)
-    // }, [])
-    let url = '';
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const [allProducts, setAllProducts] = useState([]);
+    const [hasNextPage, setHasNextPage] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
 
-    if (!hasActiveSale) {
-        url = `/products?search=${encodeURIComponent(searchParams)}`;
-    }
-    else {
-        url = `/products?hasActiveSale=${hasActiveSale}`;
-    }
-    const { data, loading, error, refetch } = useGet(url);
+    // Build URL with pagination - use fixed page for useGet, dynamic for loadMore
+    const buildUrl = (page = 1) => {
+        let url = `/products?page=${page}&limit=20`; // Using limit 4 for testing
 
-    // Extract unique categories and brands from data for filters
-    const categories = [...new Set(data?.map(item => item.category?.sub).filter(Boolean))];
-    const brands = [...new Set(data?.map(item => item.brand).filter(Boolean))];
+        if (!hasActiveSale) {
+            if (searchParams) {
+                url += `&search=${encodeURIComponent(searchParams)}`;
+            }
+        } else {
+            url += `&hasActiveSale=${hasActiveSale}`;
+        }
 
-    const filteredData = data?.filter(item => {
+        return url;
+    };
+
+    const { data, loading, error, refetch } = useGet(buildUrl(1)); // Always fetch page 1 with useGet
+
+    // Reset pagination when search parameters change
+    useEffect(() => {
+        setCurrentPage(1);
+        setAllProducts([]);
+        setHasNextPage(true);
+    }, [searchParams, hasActiveSale]);
+
+    // Handle initial data load and pagination updates
+    useEffect(() => {
+        if (data?.products) {
+            // Always replace with first page data from useGet
+            setAllProducts(data.products);
+            setHasNextPage(data.pagination?.hasNextPage || false);
+            setCurrentPage(1); // Reset to page 1
+        }
+    }, [data]);
+
+    // Load more products when reaching end
+    const loadMoreProducts = async () => {
+        if (loadingMore || !hasNextPage || loading) return;
+
+        setLoadingMore(true);
+        const nextPage = currentPage + 1;
+
+        try {
+            // Use your existing axiosAuth instance to fetch next page
+            const nextUrl = buildUrl(nextPage);
+            console.log('Loading more products from:', nextUrl);
+
+            const response = await axiosAuth.get(nextUrl);
+            const nextData = response.data;
+
+            if (nextData?.products) {
+                // Only append NEW products, avoid duplicates
+                const newProducts = nextData.products.filter(newProduct =>
+                    !allProducts.some(existingProduct => existingProduct.id === newProduct.id)
+                );
+
+                setAllProducts(prev => [...prev, ...newProducts]);
+                setHasNextPage(nextData.pagination?.hasNextPage || false);
+                setCurrentPage(nextPage);
+
+                console.log(`Loaded ${newProducts.length} new products for page ${nextPage}`);
+            }
+        } catch (error) {
+            console.error('Error loading more products:', error);
+        } finally {
+            setLoadingMore(false);
+        }
+    };
+
+    // Extract unique categories and brands from all loaded products for filters
+    const categories = [...new Set(allProducts?.map(item => item.category?.sub).filter(Boolean))];
+    const brands = [...new Set(allProducts?.map(item => item.brand).filter(Boolean))];
+
+    const filteredData = allProducts?.filter(item => {
         const priceMatch = item.bestPrice >= priceRange[0] && item.bestPrice <= priceRange[1];
         const categoryMatch = selectedCategories.length === 0 ||
             (item.category?.sub && selectedCategories.includes(item.category.sub));
@@ -91,7 +154,10 @@ const SearchResultScreen = ({ route, navigation }) => {
 
     const handleSearch = () => {
         setSearchParams(searchText);
-        // The useGet hook will automatically refetch when searchParams changes
+        // Reset pagination for new search
+        setCurrentPage(1);
+        setAllProducts([]);
+        setHasNextPage(true);
     };
 
     const renderItem = ({ item }) => {
@@ -132,6 +198,23 @@ const SearchResultScreen = ({ route, navigation }) => {
         );
     };
 
+    const renderFooter = () => {
+        if (!loadingMore) return null;
+
+        return (
+            <View style={styles.loadingFooter}>
+                <ActivityIndicator size="small" color={appColors.darkerBg} />
+                <Text style={styles.loadingText}>Loading more products...</Text>
+            </View>
+        );
+    };
+
+    const handleEndReached = () => {
+        if (hasNextPage && !loadingMore && !loading) {
+            loadMoreProducts();
+        }
+    };
+
     return (
         <View style={styles.container}>
             {/* Search Header */}
@@ -164,6 +247,7 @@ const SearchResultScreen = ({ route, navigation }) => {
             <View style={styles.resultsInfo}>
                 <Text style={styles.resultsText}>
                     {sortedData?.length || 0} results
+                    {data?.pagination && ` (${data.pagination.totalProducts} total)`}
                 </Text>
                 <TouchableOpacity
                     style={styles.sortButton}
@@ -174,7 +258,7 @@ const SearchResultScreen = ({ route, navigation }) => {
                 </TouchableOpacity>
             </View>
 
-            {loading ? (
+            {loading && allProducts.length === 0 ? (
                 <View style={styles.center}>
                     <ActivityIndicator size="large" color={appColors.darkerBg} />
                     <Text>Loading products...</Text>
@@ -194,7 +278,7 @@ const SearchResultScreen = ({ route, navigation }) => {
                         onPress={() => {
                             setSelectedCategories([]);
                             setSelectedBrands([]);
-                            setPriceRange([0, 100]);
+                            setPriceRange([0, 1000]);
                         }}
                     >
                         <Text style={styles.clearFiltersText}>Clear all filters</Text>
@@ -208,6 +292,9 @@ const SearchResultScreen = ({ route, navigation }) => {
                     numColumns={2}
                     contentContainerStyle={{ padding: 10 }}
                     columnWrapperStyle={{ justifyContent: 'space-between' }}
+                    onEndReached={handleEndReached}
+                    onEndReachedThreshold={0.5}
+                    ListFooterComponent={renderFooter}
                     ListHeaderComponent={() => (
                         (selectedCategories.length > 0 || selectedBrands.length > 0) && (
                             <View style={styles.activeFiltersContainer}>
@@ -274,7 +361,7 @@ const SearchResultScreen = ({ route, navigation }) => {
                             <Slider
                                 style={styles.slider}
                                 minimumValue={0}
-                                maximumValue={100}
+                                maximumValue={1000}
                                 step={5}
                                 minimumTrackTintColor={appColors.Hover_Button}
                                 maximumTrackTintColor="#d3d3d3"
@@ -372,7 +459,7 @@ const SearchResultScreen = ({ route, navigation }) => {
                             onPress={() => {
                                 setSelectedCategories([]);
                                 setSelectedBrands([]);
-                                setPriceRange([0, 100]);
+                                setPriceRange([0, 1000]);
                                 setSortOption('relevance');
                             }}
                         >
@@ -390,7 +477,6 @@ const SearchResultScreen = ({ route, navigation }) => {
         </View>
     );
 };
-
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#f8f8f8' },
 

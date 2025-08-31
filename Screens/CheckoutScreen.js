@@ -192,7 +192,7 @@ export default function CheckoutScreen() {
             try {
                 const response = await axios.get(`${baseUrl}/products?brand=${cartCategories[0]}`);
                 if (response.data) {
-                    const filtered = response.data?.slice(0, 4) || [];
+                    const filtered = response.data?.products.slice(0, 4) || [];
                     setRecommendations(filtered);
                 }
             } catch (error) {

@@ -4,10 +4,14 @@ import { View, Text, FlatList, TouchableOpacity, Image, ActivityIndicator, Style
 import { Feather } from '@expo/vector-icons';
 import useGet from '../hooks/useGet';
 import appColors from '../colors/appColors';
+import useAxiosAuth from '../hooks/useAxiosAuth';
 import { CategoryProductsSkeleton } from '../skeletons/CategorySkeleton';
 
 const CategoryProductsScreen = ({ navigation, route }) => {
     const { mainCategoryID } = route.params || {};
+
+    // Get axios instance at component level
+    const axiosAuth = useAxiosAuth();
 
     // Fetch subcategories from API
     const { data, loading, error, refetch } = useGet(`/categories/sub_by_main/${mainCategoryID}`);
@@ -15,18 +19,33 @@ const CategoryProductsScreen = ({ navigation, route }) => {
     const [subcategories, setSubcategories] = useState([]);
     const [selectedSubcat, setSelectedSubcat] = useState('');
 
-    // Only fetch products when selectedSubcat is set
+    // Pagination state for products
+    const [currentPage, setCurrentPage] = useState(1);
+    const [allProducts, setAllProducts] = useState([]);
+    const [hasNextPage, setHasNextPage] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
+
+    // Build URL with pagination
+    const buildProductsUrl = (page = 1) => {
+        let url = `/products?page=${page}&limit=8`;
+        if (selectedSubcat) {
+            url += `&category=${encodeURIComponent(selectedSubcat)}`;
+        }
+        return url;
+    };
+
+    // Only fetch products when selectedSubcat is set - always fetch page 1 with useGet
     const {
         data: productsData,
         loading: productsLoading,
         error: productsError,
         refetch: refetchProducts
     } = useGet(
-        selectedSubcat ? `/products?category=${encodeURIComponent(selectedSubcat)}` : null,
+        selectedSubcat ? buildProductsUrl(1) : null,
         false // Don't run on mount
     );
+
     const isLoading = loading;
-    //|| (selectedSubcat && productsLoading);
 
     useEffect(() => {
         if (data && data.subCategories) {
@@ -39,12 +58,59 @@ const CategoryProductsScreen = ({ navigation, route }) => {
         }
     }, [data]);
 
-    // Fetch products when selectedSubcat changes
+    // Reset pagination when selectedSubcat changes
     useEffect(() => {
         if (selectedSubcat) {
+            setCurrentPage(1);
+            setAllProducts([]);
+            setHasNextPage(true);
             refetchProducts();
         }
     }, [selectedSubcat]);
+
+    // Handle initial data load and pagination updates
+    useEffect(() => {
+        if (productsData?.products) {
+            // Always replace with first page data from useGet
+            setAllProducts(productsData.products);
+            setHasNextPage(productsData.pagination?.hasNextPage || false);
+            setCurrentPage(1); // Reset to page 1
+        }
+    }, [productsData]);
+
+    // Load more products when reaching end
+    const loadMoreProducts = async () => {
+        if (loadingMore || !hasNextPage || productsLoading || !selectedSubcat) return;
+
+        setLoadingMore(true);
+        const nextPage = currentPage + 1;
+
+        try {
+            // Use axiosAuth instance to fetch next page
+            const nextUrl = buildProductsUrl(nextPage);
+            console.log('Loading more products from:', nextUrl);
+
+            const response = await axiosAuth.get(nextUrl);
+            const nextData = response.data;
+
+            if (nextData?.products) {
+                // Only append NEW products, avoid duplicates
+                const newProducts = nextData.products.filter(newProduct =>
+                    !allProducts.some(existingProduct => existingProduct._id === newProduct._id)
+                );
+
+                setAllProducts(prev => [...prev, ...newProducts]);
+                setHasNextPage(nextData.pagination?.hasNextPage || false);
+                setCurrentPage(nextPage);
+
+                console.log(`Loaded ${newProducts.length} new products for page ${nextPage}`);
+            }
+        } catch (error) {
+            console.error('Error loading more products:', error);
+        } finally {
+            setLoadingMore(false);
+        }
+    };
 
     const getPriceDisplay = (product) => {
         if (product.variants && product.variants.length > 0) {
@@ -114,17 +180,30 @@ const CategoryProductsScreen = ({ navigation, route }) => {
                     {getPriceDisplay(item)}
                 </Text>
             </View>
-            {/* <View style={styles.addButton}>
-                <Text style={styles.addText}>View</Text>
-            </View> */}
         </TouchableOpacity>
     );
+
+    const renderFooter = () => {
+        if (!loadingMore) return null;
+
+        return (
+            <View style={styles.loadingFooter}>
+                <ActivityIndicator size="small" color={appColors.darkerBg} />
+                <Text style={styles.loadingText}>Loading more products...</Text>
+            </View>
+        );
+    };
+
+    const handleEndReached = () => {
+        if (hasNextPage && !loadingMore && !productsLoading && selectedSubcat) {
+            loadMoreProducts();
+        }
+    };
 
     // Handle loading state
     if (isLoading) {
         return <CategoryProductsSkeleton />;
     }
-
 
     // Handle error state
     if (error) {
@@ -197,19 +276,29 @@ const CategoryProductsScreen = ({ navigation, route }) => {
                         </View>
                     ) : (
                         <FlatList
-                            data={productsData || []}
+                            data={allProducts || []}
                             keyExtractor={item => item._id}
                             renderItem={renderProduct}
                             numColumns={2}
                             contentContainerStyle={styles.productList}
                             columnWrapperStyle={{ justifyContent: 'space-between' }}
                             showsVerticalScrollIndicator={true}
+                            onEndReached={handleEndReached}
+                            onEndReachedThreshold={0.5}
+                            ListFooterComponent={renderFooter}
                             ListEmptyComponent={
-                                <View style={styles.emptyProductContainer}>
-                                    <Text style={styles.emptyText}>
-                                        No items in {selectedSubcat}
-                                    </Text>
-                                </View>
+                                productsLoading ? (
+                                    <View style={styles.loadingContainer}>
+                                        <ActivityIndicator size="large" color={appColors.darkerBg} />
+                                        <Text style={styles.loadingText}>Loading products...</Text>
+                                    </View>
+                                ) : (
+                                    <View style={styles.emptyProductContainer}>
+                                        <Text style={styles.emptyText}>
+                                            No items in {selectedSubcat}
+                                        </Text>
+                                    </View>
+                                )
                             }
                         />
                     )}
